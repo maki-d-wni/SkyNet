@@ -1,0 +1,9 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = true
+	ignorecase = true
+	precomposeunicode = true
+[remote "skynet"]
+	url = https://github.com/maki-d-wni/skynet
+	fetch = +refs/heads/*:refs/remotes/skynet/*
