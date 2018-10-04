@@ -240,7 +240,7 @@ def animate_forecast_map(save_file, date, time, layer, params, level,
 
     fig = plt.figure(figsize=(6, 6))
     fig.add_subplot()
-    fig.subplots_adjust(top=1., bottom=0., right=1.0, left=0.)
+    fig.subplots_adjust(top=1., bottom=0., right=1., left=0.)
     imgs = []
 
     for f in files:
