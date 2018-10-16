@@ -5,8 +5,7 @@ import skynet.data_handling as dh
 from sklearn.preprocessing import StandardScaler
 from skynet.data_handling import msm
 from skynet.data_handling import area_forecast as af
-from skynet.preprocessing import PreProcessor
-from skynet import OUTPUT_PATH
+from skynet.data_handling.preprocessing import PreProcessor
 
 
 def make_datetable(date):

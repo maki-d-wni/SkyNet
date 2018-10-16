@@ -28,16 +28,16 @@ def main():
     import os
     import pandas as pd
     from sklearn.preprocessing import StandardScaler
-    from skynet import OUTPUT_PATH
+    from skynet import SKYNET_PATH, DATA_PATH
     from skynet.data_handling import read_learning_data
-    from skynet.preprocessing import PreProcessor
+    from skynet.data_handling.preprocessing import PreProcessor
     from skynet.data_handling import get_init_response
     from skynet.data_handling import split_time_series
 
     icao = "RJFK"
 
-    train = read_learning_data(OUTPUT_PATH + "/datasets/apvis/train_%s.pkl" % icao)
-    test = read_learning_data(OUTPUT_PATH + "/datasets/apvis/test_%s.pkl" % icao)
+    train = read_learning_data(DATA_PATH + "/skynet/train_%s.pkl" % icao)
+    test = read_learning_data(DATA_PATH + "/skynet/test_%s.pkl" % icao)
 
     conf1 = {"svm": {"classifier": SkySVM(),
                      "param_grid": {"C": [1, 10, 100, 1000, 10000],
@@ -85,7 +85,7 @@ def main():
     for model in ["svm", "xgb", "gb", "forest", "nn"]:
         print(model)
         print()
-        os.makedirs(OUTPUT_PATH + "/feature_selection/filter_wrapper/scores/%s" % model, exist_ok=True)
+        os.makedirs(SKYNET_PATH + "/feature_selection/filter_wrapper/scores/%s" % model, exist_ok=True)
         m = {}
         for key in sp:
             ext = sp[key]
@@ -105,7 +105,7 @@ def main():
                                              depth=conf1["depth"])
             selector.fit(X=X, y=y)
             m[key] = selector.score
-            m[key].to_csv(OUTPUT_PATH + "/feature_selection/filter_wrapper/scores/%s/%s_%s.csv"
+            m[key].to_csv(SKYNET_PATH + "/feature_selection/filter_wrapper/scores/%s/%s_%s.csv"
                           % (model, conf1["filter_method"], key),
                           index=False)
 

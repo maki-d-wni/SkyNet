@@ -8,8 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 from mpl_toolkits.basemap import Basemap
-
-from skynet import DATA_PATH, OUTPUT_PATH
+from skynet import DATA_PATH, IMAGE_PATH, MOVIE_PATH
 
 GRIB = {
     "surface": {
@@ -210,10 +209,10 @@ def plot_forecast_map(file_path, layer, params, forecast_time, level=None, alpha
 
 def animate_forecast_map(save_file, date, time, layer, params, level,
                          alpha=1., show=False, cache=True):
-    os.makedirs(OUTPUT_PATH + "/image/tmp", exist_ok=True)
+    os.makedirs(IMAGE_PATH + "/tmp", exist_ok=True)
 
     if not cache:
-        files = glob.glob(OUTPUT_PATH + "/image/tmp/FT*")
+        files = glob.glob(IMAGE_PATH + "/tmp/FT*")
         for f in files:
             os.remove(f)
         if layer == "surface":
@@ -230,12 +229,12 @@ def animate_forecast_map(save_file, date, time, layer, params, level,
             plot_forecast_map(
                 file_path='%s/%s/%s_%s.grib2' % (DATA_PATH, tid, date, time),
                 layer=layer, params=params, forecast_time=ft, level=level, alpha=alpha,
-                show=False, save_path=OUTPUT_PATH + "/image/tmp"
+                show=False, save_path=IMAGE_PATH + "/tmp"
             )
             for i in range(len(ft)):
                 plt.close()
 
-    files = glob.glob(OUTPUT_PATH + "/image/tmp/FT*")
+    files = glob.glob(IMAGE_PATH + "/tmp/FT*")
     files.sort()
 
     fig = plt.figure(figsize=(6, 6))
@@ -279,7 +278,7 @@ def __get_icao():
 
 
 def __get_airport_latlon(icaos):
-    airports_info = json.load(open(DATA_PATH + "/all_airport_data.json"))
+    airports_info = json.load(open(DATA_PATH + "/tss_sky_ml/all_airport_data.json"))
     latlon = {icao: (float(airports_info["airport"][icao][-1]["lat"]),
                      float(airports_info["airport"][icao][-1]["lon"]))
               for icao in icaos}
@@ -314,8 +313,9 @@ def __convert_latlon_to_indices(latlon, layer):
 
 
 def __get_file_pair(dir_pair, date):
-    f1 = glob.glob(DATA_PATH + "/" + dir_pair[0] + "/%s*" % date)
-    f2 = glob.glob(DATA_PATH + "/" + dir_pair[1] + "/%s*" % date)
+    print(dir_pair)
+    f1 = glob.glob(DATA_PATH + "/tss_sky_ml/" + dir_pair[0] + "/%s*" % date)
+    f2 = glob.glob(DATA_PATH + "/tss_sky_ml/" + dir_pair[1] + "/%s*" % date)
     if len(f1) > 0 and len(f2) > 0:
         f1_tree = f1[0].split("/")
         f2_tree = f2[0].split("/")
@@ -335,6 +335,7 @@ def __get_file_pair(dir_pair, date):
 
 
 def main():
+    """
     date = "20180704"
     time = "030000"
 
@@ -349,7 +350,11 @@ def main():
     df_grbs = concat_surface_upper(df_sf_grbs, df_ul_grbs)
 
     print(df_grbs["RJFK"])
+    """
 
+    import time
+
+    s = time.time()
     # 面データ表示
     layer = "surface"
     params = [GRIB[layer]["Relative humidity"], GRIB[layer]["Wind direction"]]
@@ -357,19 +362,20 @@ def main():
 
     forecast_time = range(1)
     plot_forecast_map(
-        file_path='/Users/makino/PycharmProjects/SkyCC/data/tss_sky_ml/%s/20180704_030000.grib2'
-                  % GRIB[layer]["tag_id"]["FT_0-15"],
+        file_path=DATA_PATH + '/tss_sky_ml/%s/20180704_030000.grib2' % GRIB[layer]["tag_id"]["FT_0-15"],
         layer=layer,
         params=params,
         forecast_time=forecast_time,
         level=level,
         alpha=0.5,
-        show=True,
-        save_path=None
+        show=False,
+        save_path=IMAGE_PATH + "/tmp"
     )
 
+    print("running time", time.time() - s)
+
     """
-    animate_forecast_map(OUTPUT_PATH + "/movie/%s_%s_%s_%s.mp4" % (params[0], level, date, time),
+    animate_forecast_map(MOVIE_PATH + "/%s_%s_%s_%s.mp4" % (params[0], level, date, time),
                          date, time, layer, params, level,
                          alpha=1., show=True, cache=False)
     """

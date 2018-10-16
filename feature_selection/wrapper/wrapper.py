@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn import clone
 from sklearn.metrics import f1_score
 
-from skynet import OUTPUT_PATH
+from skynet import DATA_PATH
 from skynet.data_handling import read_learning_data
 from skynet.data_handling import balanced
 from skynet.svm import SkySVM
@@ -200,7 +200,7 @@ class WrapperSelector(object):
 def main():
     icao = "RJFK"
 
-    train = read_learning_data(OUTPUT_PATH + "/datasets/apvis/train_%s.pkl" % icao)
+    train = read_learning_data(DATA_PATH + "/skynet/train_%s.pkl" % icao)
 
     clf = WrapperSelector(classifier=SkySVM(), nof=2,
                           param_grid={

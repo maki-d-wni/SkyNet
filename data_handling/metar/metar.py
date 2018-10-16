@@ -3,7 +3,7 @@ import glob
 import datetime
 import pandas as pd
 
-from skynet import DATA_PATH, OUTPUT_PATH
+from skynet import DATA_PATH, LIVE_PATH
 from skynet.data_handling.base import convert_dict_construction
 from RU import *
 
@@ -30,7 +30,7 @@ def read(icaos, date, time):
 
 
 def live(icaos, date, time):
-    files = glob.glob(OUTPUT_PATH + "/live/html/*.html")
+    files = glob.glob(LIVE_PATH + "/*.html")
 
     metar = read(icaos, date, time)
 

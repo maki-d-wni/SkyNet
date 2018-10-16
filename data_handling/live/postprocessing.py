@@ -1,7 +1,7 @@
 import datetime
 import numpy as np
 import pandas as pd
-from skynet import OUTPUT_PATH, HTML_PATH
+
 from skynet.data_handling import area_forecast as af
 from skynet.data_handling import human_edit as he
 
@@ -129,7 +129,7 @@ def main():
     if args.time is None:
         time = "060000"
 
-    vis_pred = pd.read_csv("%s/live/prediction/%s.csv" % (OUTPUT_PATH, icao))
+    vis_pred = pd.read_csv("%s/live/prediction/%s.csv" % (SKYNET_PATH, icao))
     vis_pred = edit_visibility(vis_pred, v_min=300, key="SkyNet")
     vis_human = daily_human_edit(icao, date, time)[["date", "VIS"]]
     vis_af = daily_area_forecast(icao, date, time)[["date", "VIS"]]
@@ -150,7 +150,7 @@ def main():
         vis.columns
     ]
     print(vis)
-    vis.to_html("%s/%s.html" % (HTML_PATH, icao), index=False)
+    vis.to_html("%s/%s.html" % (LIVE_PATH, icao), index=False)
 
 
 if __name__ == "__main__":

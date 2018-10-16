@@ -48,12 +48,12 @@ def main():
     import matplotlib.pyplot as plt
     from sklearn.preprocessing import StandardScaler
     from sklearn.metrics import recall_score
-    from skynet import OUTPUT_PATH
+    from skynet import DATA_PATH, MODEL_PATH
     from skynet.data_handling import get_init_response
     from skynet.data_handling import read_learning_data
     from skynet.data_handling import split_time_series
     from skynet.data_handling import balanced
-    from skynet.preprocessing import PreProcessor
+    from skynet.data_handling.preprocessing import PreProcessor
     from skynet.ensemble import SkyRandomForest
 
     preprocess = PreProcessor(norm=False, binary=False)
@@ -89,8 +89,8 @@ def main():
 
     icao = "RJCC"
 
-    train = read_learning_data(OUTPUT_PATH + "/datasets/apvis/train_%s.pkl" % icao)
-    test = read_learning_data(OUTPUT_PATH + "/datasets/apvis/test_%s.pkl" % icao)
+    train = read_learning_data(DATA_PATH + "/skynet/train_%s.pkl" % icao)
+    test = read_learning_data(DATA_PATH + "/skynet/test_%s.pkl" % icao)
 
     # feature増やしてからデータ構造を（入力、正解）に戻す
     preprocess.fit(train.iloc[:, :-1], train.iloc[:, -1], test.iloc[:, :-1], test.iloc[:, -1])
@@ -107,7 +107,7 @@ def main():
     date = datetime.datetime.now().strftime("%Y%m%d")
     # date = "20180824"
     for i_term, key in enumerate(sptrain):
-        os.makedirs(OUTPUT_PATH + "/learning_models/%s/forest/%s/%s" % (icao, date, key), exist_ok=True)
+        os.makedirs(MODEL_PATH + "/%s/forest/%s/%s" % (icao, date, key), exist_ok=True)
 
         X_train = sptrain[key][fets]
         X_train = pd.DataFrame(ss.fit_transform(X_train), columns=X_train.keys())
@@ -143,7 +143,7 @@ def main():
             y_pred = np.where(p > 1, 0, 1)
             print(recall_score(y_true=y_true, y_pred=y_pred))
 
-        search = True
+        search = False
         y_true = np.where(y_test > 1, 0, 1)
         p_rf = np.zeros((len(X_test), n_clfs[i_term]))
         score_rf = np.zeros(n_clfs[i_term])
@@ -157,12 +157,12 @@ def main():
                 y_pred = np.where(p > 1, 0, 1)
 
                 scr = recall_score(y_true=y_true, y_pred=y_pred)
-              
+
                 if scr >= threat[i_term]:
                     print(scr)
                     p_rf[:, i] = p
                     score_rf[i] = scr
-                    pickle.dump(clf, open(OUTPUT_PATH + "/learning_models/%s/forest/%s/%s/rf%03d.pkl"
+                    pickle.dump(clf, open(MODEL_PATH + "/%s/forest/%s/%s/rf%03d.pkl"
                                           % (icao, date, key, i), "wb"))
                     i += 1
 
@@ -172,7 +172,7 @@ def main():
         learning_model = True
         if learning_model:
             for i in range(n_clfs[i_term]):
-                clf = pickle.load(open(OUTPUT_PATH + "/learning_models/%s/forest/%s/%s/rf%03d.pkl"
+                clf = pickle.load(open(MODEL_PATH + "/%s/forest/%s/%s/rf%03d.pkl"
                                        % (icao, date, key, i), "rb"))
                 p_rf[:, i] = clf.predict(X_test.values)
 
@@ -185,11 +185,9 @@ def main():
         score_rf = score_rf.mean()
         print("f1 mean", score_rf)
 
-        """
         plt.plot(y_test)
         plt.plot(p)
         plt.show()
-        """
 
 
 if __name__ == "__main__":
