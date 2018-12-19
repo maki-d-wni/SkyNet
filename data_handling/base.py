@@ -1,10 +1,226 @@
 import os
-import shutil
 import pickle
-import numpy as np
-import pandas as pd
+import shutil
 
-from skynet import DATA_PATH
+import numpy as np
+from pandas import DataFrame
+
+
+class MSMBase(object):
+    _params = {
+        'surface': [
+            'Pressure reduced to MSL',
+            'u-component of wind',
+            'v-component of wind',
+            'Temperature',
+            'Relative humidity',
+            'Low cloud cover',
+            'Medium cloud cover',
+            'High cloud cover',
+            'Total cloud cover',
+            'Total precipitation'
+        ],
+        'upper': [
+            'Geopotential height',
+            'Relative humidity',
+            'Temperature',
+            'Vertical velocity [pressure]',
+            'u-component of wind',
+            'v-component of wind'
+        ]
+    }
+    _level = {
+        'surface': ['surface'],
+        'upper': [
+            '300',
+            '400',
+            '500',
+            '600',
+            '700',
+            '800',
+            '850',
+            '900',
+            '925',
+            '950',
+            '975',
+            '1000'
+        ]
+    }
+    _base_time = {
+        'surface': ['%02d' % t for t in range(0, 24, 3)],
+        'upper': ['%02d' % t for t in range(3, 24, 6)]
+    }
+    _validity_time = {
+        'surface': ['%02d' % t for t in range(40)],
+        'upper': ['%02d' % t for t in range(0, 40, 3)]
+    }
+    _shape = {
+        'surface': (505, 481),
+        'upper': (253, 241)
+    }
+
+
+class MSM(MSMBase):
+    @property
+    def params(self):
+        return self._params
+
+    @params.setter
+    def params(self, params):
+        self._params = params
+
+    @property
+    def level(self):
+        return self._level
+
+    @level.setter
+    def level(self, level):
+        self._level = level
+
+    @property
+    def base_time(self):
+        return self._base_time
+
+    @base_time.setter
+    def base_time(self, base_time):
+        self._base_time = base_time
+
+    @property
+    def validity_time(self):
+        return self._validity_time
+
+    @validity_time.setter
+    def validity_time(self, validity_time):
+        self._validity_time = validity_time
+
+    @property
+    def shape(self):
+        return self._shape
+
+    @shape.setter
+    def shape(self, shape):
+        self._shape = shape
+
+    def read(self, path):
+        pass
+
+    def show(self):
+        pass
+
+
+class NWPDataHandler(DataFrame):
+    def __init__(self, data=None, index=None, columns=None, dtype=None, copy=False):
+        super().__init__(data=data, index=index, columns=columns, dtype=dtype, copy=copy)
+        self.msm = MSM()
+
+    def append(self, other, axis=0, key=None, ignore_index=False, verify_integrity=False, inplace=True, **kwargs):
+        from pandas.core.reshape.concat import concat
+        if axis == 0:
+            new_data = concat([self, DataFrame(other)], axis=axis)
+        else:
+            new_data = concat([self, DataFrame(other)], axis=axis)
+
+        if inplace:
+            self._update_inplace(new_data)
+        else:
+            return new_data
+
+    def query(self, expr, inplace=True, **kwargs):
+        return super().query(expr, inplace=inplace, **kwargs)
+
+    def eval(self, expr, inplace=True, **kwargs):
+        return super().eval(expr, inplace=inplace, **kwargs)
+
+    def ffill(self, axis=None, inplace=True, limit=None, downcast=None):
+        return super().ffill(axis=axis, inplace=inplace, limit=limit, downcast=downcast)
+
+    def bfill(self, axis=None, inplace=True, limit=None, downcast=None):
+        return super().bfill(axis=axis, inplace=inplace, limit=limit, downcast=downcast)
+
+    def fillna(self, value=None, method=None, axis=None, inplace=True,
+               limit=None, downcast=None, **kwargs):
+        return super().fillna(value=value, method=method, axis=axis, inplace=inplace,
+                              limit=limit, downcast=downcast, **kwargs)
+
+    def set_index(self, keys, drop=True, append=False, inplace=True,
+                  verify_integrity=False):
+        return super().set_index(keys, drop=drop, append=append, inplace=inplace,
+                                 verify_integrity=verify_integrity)
+
+    def reset_index(self, level=None, drop=False, inplace=True, col_level=0,
+                    col_fill=''):
+        return super().reset_index(level=level, drop=drop, inplace=inplace, col_level=col_level,
+                                   col_fill=col_fill)
+
+    def set_axis(self, labels, axis=0, inplace=None):
+        return super().set_axis(labels, axis=axis, inplace=inplace)
+
+    def rename_axis(self, mapper, axis=0, copy=True, inplace=True):
+        return super().rename_axis(mapper, axis=axis, copy=copy, inplace=inplace)
+
+    def drop(self, labels=None, axis=0, index=None, columns=None, level=None,
+             inplace=True, errors='raise'):
+        return super().drop(labels=labels, axis=axis, index=index, columns=columns, level=level,
+                            inplace=inplace, errors=errors)
+
+    def dropna(self, axis=0, how='any', thresh=None, subset=None,
+               inplace=True):
+        return super().dropna(axis=axis, how=how, thresh=thresh, subset=subset,
+                              inplace=inplace)
+
+    def drop_duplicates(self, subset=None, keep='first', inplace=True):
+        return super().drop_duplicates(subset=subset, keep=keep, inplace=inplace)
+
+    def sort_values(self, by, axis=0, ascending=True, inplace=True,
+                    kind='quicksort', na_position='last'):
+        return super().sort_values(by, axis=axis, ascending=ascending, inplace=inplace,
+                                   kind=kind, na_position=na_position)
+
+    def sort_index(self, axis=0, level=None, ascending=True, inplace=True,
+                   kind='quicksort', na_position='last', sort_remaining=True,
+                   by=None):
+        return super().sort_index(axis=axis, level=level, ascending=ascending, inplace=inplace,
+                                  kind=kind, na_position=na_position, sort_remaining=sort_remaining,
+                                  by=by)
+
+    def sortlevel(self, level=0, axis=0, ascending=True, inplace=True,
+                  sort_remaining=True):
+        return super().sortlevel(level=level, axis=axis, ascending=ascending, inplace=inplace,
+                                 sort_remaining=sort_remaining)
+
+    def consolidate(self, inplace=True):
+        return super().consolidate(inplace=inplace)
+
+    def replace(self, to_replace=None, value=None, inplace=True, limit=None,
+                regex=False, method='pad', axis=None):
+        return super().replace(to_replace=to_replace, value=value, inplace=inplace, limit=limit,
+                               regex=regex, method=method, axis=axis)
+
+    def interpolate(self, method='linear', axis=0, limit=None, inplace=True,
+                    limit_direction='forward', downcast=None, **kwargs):
+        return super().interpolate(method=method, axis=axis, limit=limit, inplace=inplace,
+                                   limit_direction=limit_direction, downcast=downcast, **kwargs)
+
+    def clip(self, lower=None, upper=None, axis=None, inplace=True,
+             *args, **kwargs):
+        return super().clip(lower=lower, upper=upper, axis=axis, inplace=inplace,
+                            *args, **kwargs)
+
+    def clip_upper(self, threshold, axis=None, inplace=True):
+        return super().clip_upper(threshold, axis=axis, inplace=inplace)
+
+    def clip_lower(self, threshold, axis=None, inplace=True):
+        return super().clip_lower(threshold, axis=axis, inplace=inplace)
+
+    def where(self, cond, other=np.nan, inplace=True, axis=None, level=None,
+              errors='raise', try_cast=False, raise_on_error=None):
+        return super().where(cond, other=other, inplace=inplace, axis=axis, level=level,
+                             errors=errors, try_cast=try_cast, raise_on_error=raise_on_error)
+
+    def mask(self, cond, other=np.nan, inplace=True, axis=None, level=None,
+             errors='raise', try_cast=False, raise_on_error=None):
+        return super().mask(cond, other=other, inplace=inplace, axis=axis, level=level,
+                            errors=errors, try_cast=try_cast, raise_on_error=raise_on_error)
 
 
 def get_init_features():
@@ -40,10 +256,6 @@ def concat(data, value):
         ins_idx = len(data.keys())
         data.insert(loc=ins_idx, column=nf, value=value[nf])
     return data
-
-
-def drop(data, drop_keys=()):
-    return data.drop(drop_keys, axis=1, inplace=False)
 
 
 def read_learning_data(path):

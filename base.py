@@ -1,32 +1,21 @@
+import os
+import json
 import numpy as np
 import pandas as pd
 
-from abc import ABCMeta, abstractclassmethod
+from abc import ABCMeta, abstractmethod
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, accuracy_score
 
-from skynet.data_handling import get_init_vis_level
-from skynet.data_handling import concat
-from skynet.feature_engineering import convert_date
-from skynet.feature_engineering import convert_wind_speed
-from skynet.feature_engineering import conv_pressure_surface
-from skynet.evaluation import rmse
-from skynet.evaluation import confusion_matrix
+import configparser
+
+config = configparser.ConfigParser()
+config.read('%s/config.ini' % os.path.dirname(os.path.abspath(__file__)))
+data_info = json.load(open('%s/data.json' % os.path.dirname(os.path.abspath(__file__)), 'rb'))
 
 
-class SkyMLBase(metaclass=ABCMeta):
-    def __init__(self, **kwargs):
-        pass
-
-    @abstractclassmethod
-    def fit(self):
-        pass
-
-    @abstractclassmethod
-    def predict(self):
-        pass
-
+class Tmp(object):
     def preprocessing(self, X_train=None, y_train=None, X_test=None, y_test=None,
                       cdate=True, cwspd=True, smooth=True, edge=True,
                       binary=True, norm=True):
@@ -41,7 +30,6 @@ class SkyMLBase(metaclass=ABCMeta):
                 X_test, y_test, binary, norm, cdate, cwspd, smooth, edge
             )
             self.__test_data(X_test, y_test)
-
         return X_train, y_train, X_test, y_test
 
     def reset(self, **kwargs):

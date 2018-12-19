@@ -3,8 +3,6 @@ import shutil
 import numpy as np
 import pandas as pd
 
-from skynet import DATA_PATH
-from skynet.data_handling.base import convert_dict_construction
 from RU import *
 
 

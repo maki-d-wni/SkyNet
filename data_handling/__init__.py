@@ -1,4 +1,4 @@
-from skynet.data_handling import msm
+from skynet.data_handling import nwp
 from skynet.data_handling import area_forecast
 from skynet.data_handling import human_edit
 from skynet.data_handling import metar

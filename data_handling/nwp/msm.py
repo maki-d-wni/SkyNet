@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 from mpl_toolkits.basemap import Basemap
-from skynet import DATA_PATH, IMAGE_PATH, MOVIE_PATH
 
 GRIB = {
     "surface": {
@@ -357,7 +356,7 @@ def main():
     s = time.time()
     # 面データ表示
     layer = "surface"
-    params = [GRIB[layer]["Relative humidity"], GRIB[layer]["Wind direction"]]
+    params = ["Wind speed", "Wind direction"]
     level = "surface"
 
     forecast_time = range(1)
