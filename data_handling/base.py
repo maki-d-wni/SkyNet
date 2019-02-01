@@ -108,10 +108,69 @@ class MSM(MSMBase):
         pass
 
 
-class NWPDataHandler(DataFrame):
-    def __init__(self, data=None, index=None, columns=None, dtype=None, copy=False):
+class DateBase(object):
+    pass
+
+
+class Date(DateBase):
+    def __init__(self):
+        super().__init__()
+
+    def split_periodic(self):
+        pass
+
+
+def split_time_series(data, level="month", period=2):
+    date = data["date"].astype(int).astype(str)
+    data.index = date.values
+    spd = {}
+    if level == "year":
+        # i = 0
+        # e = 4
+        raise NotImplementedError
+    elif level == "month":
+        i = 4
+        e = 6
+        for idx in range(1, 13, period):
+            if idx + period > 12:
+                key = "month:%d-%d" % (idx, 12)
+                ms = ["{0:02d}".format(m) for m in range(idx, 13)]
+                ext_date = [d for d in date if d[i:e] in ms]
+                spd[key] = data.loc[ext_date].reset_index(drop=True)
+            else:
+                key = "month:%d-%d" % (idx, idx + period - 1)
+                ms = ["{0:02d}".format(m) for m in range(idx, idx + period)]
+                ext_date = [d for d in date if d[i:e] in ms]
+                spd[key] = data.loc[ext_date].reset_index(drop=True)
+    elif level == "day":
+        # i = 6
+        # e = 8
+        raise NotImplementedError
+    else:
+        # i = 0
+        # e = 8
+        raise NotImplementedError
+
+    data.reset_index(drop=True, inplace=True)
+
+    return spd
+
+
+class NWPFrame(DataFrame):
+    def __init__(self, data=None, index=None, columns=None, dtype=None, copy=False, clone=True):
         super().__init__(data=data, index=index, columns=columns, dtype=dtype, copy=copy)
-        self.msm = MSM()
+
+        if clone:
+            self._init_data = None
+            self._set_init_data()
+
+    @property
+    def init_data(self):
+        return self._init_data
+
+    def _set_init_data(self):
+        from copy import deepcopy
+        self._init_data = deepcopy(self)
 
     def append(self, other, axis=0, key=None, ignore_index=False, verify_integrity=False, inplace=True, **kwargs):
         from pandas.core.reshape.concat import concat
@@ -119,6 +178,51 @@ class NWPDataHandler(DataFrame):
             new_data = concat([self, DataFrame(other)], axis=axis)
         else:
             new_data = concat([self, DataFrame(other)], axis=axis)
+
+        if inplace:
+            self._update_inplace(new_data)
+        else:
+            return new_data
+
+    def sync(self, objs, sync_key, inplace=True):
+        from copy import deepcopy
+        from pandas.core.reshape.concat import concat
+
+        def __set_sync_index():
+
+            try:
+                sync_index = new_data[sync_key].astype(int)
+            except ValueError:
+                sync_index = new_data[sync_key]
+
+            try:
+                sync_index = sync_index.astype(str)
+            except ValueError:
+                sync_index = new_data[sync_key]
+
+            try:
+                new_data.index = sync_index.values
+            except ValueError:
+                raise
+
+            try:
+                sync_index = objs[sync_key].astype(int)
+            except ValueError:
+                sync_index = objs[sync_key]
+
+            try:
+                sync_index = sync_index.astype(str)
+            except ValueError:
+                sync_index = objs[sync_key]
+
+            try:
+                objs.index = sync_index.values
+            except ValueError:
+                raise
+
+        new_data = deepcopy(self)
+        __set_sync_index()
+        new_data = concat([new_data, objs], axis=1).reset_index(drop=True)
 
         if inplace:
             self._update_inplace(new_data)
@@ -223,6 +327,47 @@ class NWPDataHandler(DataFrame):
                             errors=errors, try_cast=try_cast, raise_on_error=raise_on_error)
 
 
+class MSMFrame(NWPFrame):
+    pass
+
+
+ndf = NWPFrame(
+    [
+        [1, 2, 3],
+        ['a', 'b', 'c'],
+        [4, 'd', 5]
+    ],
+    columns=['a', 'b', 'c']
+)
+
+ndf.sync(
+    NWPFrame(
+        [
+            [6, 7],
+            ['e', 'f'],
+            ['g', 5]
+        ],
+        index=[1, 2, 3],
+        columns=['a2', 'c']
+    ),
+    sync_key='c'
+)
+
+test = NWPFrame(
+    [
+        [1, 2, 3],
+        [4, 5, 6]
+    ],
+    columns=['a', 'b', 'c']
+)
+
+print(ndf.init_data)
+print(ndf)
+for attr in dir(ndf):
+    if attr == 'init_data':
+        print('aaa')
+
+
 def get_init_features():
     f = ['date', 'CAPE', 'CIN', 'SSI', 'WX_telop_100', 'WX_telop_200', 'WX_telop_300', 'WX_telop_340',
          'WX_telop_400', 'WX_telop_430', 'WX_telop_500', 'WX_telop_600', 'WX_telop_610',
@@ -250,33 +395,12 @@ def get_init_vis_level():
     return vis_level
 
 
-def concat(data, value):
-    new_feature = list(value.keys())
-    for nf in new_feature:
-        ins_idx = len(data.keys())
-        data.insert(loc=ins_idx, column=nf, value=value[nf])
-    return data
-
-
 def read_learning_data(path):
     features = get_init_features()
     response = get_init_response()
     data = pickle.load(open(path, "rb"))
     data = data[features + response].reset_index(drop=True)
     return data
-
-
-def sync_values(base, x, key):
-    base.index = base[key].astype(int).astype(str).values
-    x.index = x[key].astype(int).astype(str).values
-
-    for k in x:
-        base[k] = x[k]
-
-    base = base.reset_index(drop=True)
-    base = base.dropna()
-
-    return base
 
 
 def split_binary(data, key):
@@ -289,42 +413,6 @@ def split_binary(data, key):
     x0.insert(loc=len(x0.keys()), column="binary", value=np.zeros(len(x0)))
 
     return x1, x0
-
-
-def split_time_series(data, level="month", period=2):
-    date = data["date"].astype(int).astype(str)
-    data.index = date.values
-    spd = {}
-    if level == "year":
-        # i = 0
-        # e = 4
-        raise NotImplementedError
-    elif level == "month":
-        i = 4
-        e = 6
-        for idx in range(1, 13, period):
-            if idx + period > 12:
-                key = "month:%d-%d" % (idx, 12)
-                ms = ["{0:02d}".format(m) for m in range(idx, 13)]
-                ext_date = [d for d in date if d[i:e] in ms]
-                spd[key] = data.loc[ext_date].reset_index(drop=True)
-            else:
-                key = "month:%d-%d" % (idx, idx + period - 1)
-                ms = ["{0:02d}".format(m) for m in range(idx, idx + period)]
-                ext_date = [d for d in date if d[i:e] in ms]
-                spd[key] = data.loc[ext_date].reset_index(drop=True)
-    elif level == "day":
-        # i = 6
-        # e = 8
-        raise NotImplementedError
-    else:
-        # i = 0
-        # e = 8
-        raise NotImplementedError
-
-    data.reset_index(drop=True, inplace=True)
-
-    return spd
 
 
 def extract_time_series(data, level="month", init=1, end=2):
