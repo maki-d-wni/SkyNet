@@ -70,11 +70,6 @@ class WrapperSelector(object):
 
             selected[-1] = bf
 
-            print(selected)
-            print(bs["score"])
-            print(bs["params"])
-            print()
-
             if bs["score"] != 0:
                 bclf = self.classifier.__class__(**bs["params"])
                 bclf.fit(bX[selected].values, by.values[:, 0])
@@ -96,6 +91,11 @@ class WrapperSelector(object):
             else:
                 uufs = [f for f in fets if not (f in selected)]
                 exfs = self.__filter(X[uufs], y)
+
+            print(selected)
+            print(bs["score"])
+            print(bs["params"])
+            print()
 
             dfap = pd.DataFrame()
             dfap["score"] = [bs["score"]]

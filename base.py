@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from abc import ABCMeta, abstractclassmethod
+from abc import ABCMeta, abstractmethod
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, accuracy_score
@@ -19,11 +19,11 @@ class SkyMLBase(metaclass=ABCMeta):
     def __init__(self, **kwargs):
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def fit(self):
         pass
 
-    @abstractclassmethod
+    @abstractmethod
     def predict(self):
         pass
 

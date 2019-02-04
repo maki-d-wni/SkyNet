@@ -111,7 +111,7 @@ def plot_forecast_map(file_path, layer, params, forecast_time, level=None, alpha
         fcst = [forecast_time]
 
     for ft in fcst:
-        fig = plt.figure(figsize=(12, 12))
+        fig = plt.figure(figsize=(6, 6))
         fig.add_subplot()
         fig.subplots_adjust(top=1, bottom=0., right=1.0, left=0.)
 
@@ -357,18 +357,18 @@ def main():
     s = time.time()
     # 面データ表示
     layer = "surface"
-    params = [GRIB[layer]["Relative humidity"], GRIB[layer]["Wind direction"]]
+    params = ["Wind speed"]
     level = "surface"
 
     forecast_time = range(1)
     plot_forecast_map(
-        file_path=DATA_PATH + '/tss_sky_ml/%s/20180704_030000.grib2' % GRIB[layer]["tag_id"]["FT_0-15"],
+        file_path=DATA_PATH + '/tss_sky_ml/surface/ft_0_15/20180704_030000.000',
         layer=layer,
         params=params,
         forecast_time=forecast_time,
         level=level,
         alpha=0.5,
-        show=False,
+        show=True,
         save_path=IMAGE_PATH + "/tmp"
     )
 

@@ -11,7 +11,8 @@ from skynet.svm import SkySVM
 
 
 class SkyStacking(SkyMLBase):
-    def __init__(self, classifiers, meta_classifier, n_folds=3):
+    def __init__(self, classifiers, meta_classifier, n_folds=3, **kwargs):
+        SkyMLBase.__init__(**kwargs)
         self.classifiers = classifiers
         self.meta_classifier = meta_classifier
         self.n_folds = n_folds
@@ -87,17 +88,17 @@ class SkyStacking(SkyMLBase):
 def main():
     from sklearn.preprocessing import StandardScaler
     from sklearn.metrics import f1_score
-    from skynet import OUTPUT_PATH
+    from skynet import DATA_PATH
     from skynet.data_handling import read_learning_data
-    from skynet.preprocessing import PreProcessor
+    from skynet.data_handling.preprocessing import PreProcessor
     from skynet.data_handling import get_init_response
     from skynet.data_handling import split_time_series
     from mlxtend.classifier import StackingClassifier
 
     icao = "RJFK"
 
-    train = read_learning_data(OUTPUT_PATH + "/datasets/apvis/train_%s.pkl" % icao)
-    test = read_learning_data(OUTPUT_PATH + "/datasets/apvis/test_%s.pkl" % icao)
+    train = read_learning_data(DATA_PATH + "/pickle/learning/skynet/train_%s.pkl" % icao)
+    test = read_learning_data(DATA_PATH + "/pickle/learning/skynet/test_%s.pkl" % icao)
 
     data = pd.concat([train, test]).reset_index(drop=True)
 
@@ -105,11 +106,8 @@ def main():
     preprocess.fit(data.iloc[:, :-1], data.iloc[:, -1])
 
     data = pd.concat([preprocess.X_train, preprocess.y_train], axis=1)
-
-    spdata = split_time_series(data, level="month", period=2)
-
-    selected = list(spdata.keys())[3:]
-    spdata = {key: spdata[key] for key in selected}
+    date = data["date"].values
+    spdata = split_time_series(data, date, level="month", period=2)
 
     for key in spdata:
         ext = spdata[key]
@@ -124,6 +122,9 @@ def main():
         X, y = balanced(X, y)
 
         spX, spy = preprocess.split(X, y, n_folds=5)
+        for k in spy:
+            print(np.unique(spy[k]))
+
         X = pd.concat([spX[n] for n in spX if n != 0]).reset_index(drop=True)
         y = pd.concat([spy[n] for n in spy if n != 0]).reset_index(drop=True)
 

@@ -1,6 +1,7 @@
 import os
 import shutil
 import pickle
+import datetime
 import numpy as np
 import pandas as pd
 
@@ -8,19 +9,94 @@ from skynet import DATA_PATH
 
 
 def get_init_features():
-    f = ['date', 'CAPE', 'CIN', 'SSI', 'WX_telop_100', 'WX_telop_200', 'WX_telop_300', 'WX_telop_340',
-         'WX_telop_400', 'WX_telop_430', 'WX_telop_500', 'WX_telop_600', 'WX_telop_610',
-         'Pressure reduced to MSL', 'Pressure', 'u-component of wind', 'v-component of wind', 'Temperature',
-         'Relative humidity', 'Low cloud cover', 'Medium cloud cover', 'High cloud cover', 'Total cloud cover',
-         'Total precipitation', 'Geop1000', 'u-co1000', 'v-co1000', 'Temp1000', 'Vert1000', 'Rela1000',
-         'Geop975', 'u-co975', 'v-co975', 'Temp975', 'Vert975', 'Rela975', 'Geop950', 'u-co950', 'v-co950',
-         'Temp950', 'Vert950', 'Rela950', 'Geop925', 'u-co925', 'v-co925', 'Temp925', 'Vert925', 'Rela925',
-         'Geop900', 'u-co900', 'v-co900', 'Temp900', 'Vert900', 'Rela900', 'Geop850', 'u-co850', 'v-co850',
-         'Temp850', 'Vert850', 'Rela850', 'Geop800', 'u-co800', 'v-co800', 'Temp800', 'Vert800', 'Rela800',
-         'Geop700', 'u-co700', 'v-co700', 'Temp700', 'Vert700', 'Rela700', 'Geop600', 'u-co600', 'v-co600',
-         'Temp600', 'Vert600', 'Rela600', 'Geop500', 'u-co500', 'v-co500', 'Temp500', 'Vert500', 'Rela500',
-         'Geop400', 'u-co400', 'v-co400', 'Temp400', 'Vert400', 'Rela400', 'Geop300', 'u-co300', 'v-co300',
-         'Temp300', 'Vert300', 'Rela300']
+    f = [
+        'date',
+        'CAPE', 'CIN', 'SSI', 'WX_telop_100', 'WX_telop_200', 'WX_telop_300', 'WX_telop_340',
+        'WX_telop_400', 'WX_telop_430', 'WX_telop_500', 'WX_telop_600', 'WX_telop_610',
+        'Pressure reduced to MSL',
+        'Pressure',
+        'u-component of wind',
+        'v-component of wind',
+        'Temperature',
+        'Relative humidity',
+        'Low cloud cover',
+        'Medium cloud cover',
+        'High cloud cover',
+        'Total cloud cover',
+        'Total precipitation',
+        'Geop1000',
+        'u-co1000',
+        'v-co1000',
+        'Temp1000',
+        'Vert1000',
+        'Rela1000',
+        'Geop975',
+        'u-co975',
+        'v-co975',
+        'Temp975',
+        'Vert975',
+        'Rela975',
+        'Geop950',
+        'u-co950',
+        'v-co950',
+        'Temp950',
+        'Vert950',
+        'Rela950',
+        'Geop925',
+        'u-co925',
+        'v-co925',
+        'Temp925',
+        'Vert925',
+        'Rela925',
+        'Geop900',
+        'u-co900',
+        'v-co900',
+        'Temp900',
+        'Vert900',
+        'Rela900',
+        'Geop850',
+        'u-co850',
+        'v-co850',
+        'Temp850',
+        'Vert850',
+        'Rela850',
+        'Geop800',
+        'u-co800',
+        'v-co800',
+        'Temp800',
+        'Vert800',
+        'Rela800',
+        'Geop700',
+        'u-co700',
+        'v-co700',
+        'Temp700',
+        'Vert700',
+        'Rela700',
+        'Geop600',
+        'u-co600',
+        'v-co600',
+        'Temp600',
+        'Vert600',
+        'Rela600',
+        'Geop500',
+        'u-co500',
+        'v-co500',
+        'Temp500',
+        'Vert500',
+        'Rela500',
+        'Geop400',
+        'u-co400',
+        'v-co400',
+        'Temp400',
+        'Vert400',
+        'Rela400',
+        'Geop300',
+        'u-co300',
+        'v-co300',
+        'Temp300',
+        'Vert300',
+        'Rela300'
+    ]
     return f
 
 
@@ -79,9 +155,9 @@ def split_binary(data, key):
     return x1, x0
 
 
-def split_time_series(data, level="month", period=2):
-    date = data["date"].astype(int).astype(str)
-    data.index = date.values
+def split_time_series(data, date, level="month", period=2, index_date=False):
+    date = date.astype(int).astype(str)
+    data.index = date
     spd = {}
     if level == "year":
         # i = 0
@@ -96,11 +172,15 @@ def split_time_series(data, level="month", period=2):
                 ms = ["{0:02d}".format(m) for m in range(idx, 13)]
                 ext_date = [d for d in date if d[i:e] in ms]
                 spd[key] = data.loc[ext_date].reset_index(drop=True)
+                if index_date:
+                    spd[key].index = strtime_to_datetime(ext_date)
             else:
                 key = "month:%d-%d" % (idx, idx + period - 1)
                 ms = ["{0:02d}".format(m) for m in range(idx, idx + period)]
                 ext_date = [d for d in date if d[i:e] in ms]
                 spd[key] = data.loc[ext_date].reset_index(drop=True)
+                if index_date:
+                    spd[key].index = strtime_to_datetime(ext_date)
     elif level == "day":
         # i = 6
         # e = 8
@@ -110,9 +190,18 @@ def split_time_series(data, level="month", period=2):
         # e = 8
         raise NotImplementedError
 
-    data.reset_index(drop=True, inplace=True)
-
     return spd
+
+
+def strtime_to_datetime(date):
+    date = np.array(date).astype(int).astype(str)
+    date = [datetime.datetime.strptime(d, "%Y%m%d%H%M") for d in date]
+    return date
+
+
+def datetime_to_strtime(date):
+    date = [d.strftime("%Y%m%d%H%M") for d in date]
+    return date
 
 
 def extract_time_series(data, level="month", init=1, end=2):

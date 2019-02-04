@@ -12,6 +12,8 @@ from skynet.data_handling.base import read_learning_data
 from skynet.data_handling.base import sync_values
 from skynet.data_handling.base import split_binary
 from skynet.data_handling.base import split_time_series
+from skynet.data_handling.base import strtime_to_datetime
+from skynet.data_handling.base import datetime_to_strtime
 from skynet.data_handling.base import extract_time_series
 from skynet.data_handling.base import match_keys
 from skynet.data_handling.base import match_keys_index

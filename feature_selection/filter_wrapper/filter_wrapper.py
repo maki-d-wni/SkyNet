@@ -34,7 +34,7 @@ def main():
     from skynet.data_handling import get_init_response
     from skynet.data_handling import split_time_series
 
-    icao = "RJFK"
+    icao = "RJCC"
 
     train = read_learning_data(DATA_PATH + "/skynet/train_%s.pkl" % icao)
     test = read_learning_data(DATA_PATH + "/skynet/test_%s.pkl" % icao)
@@ -82,7 +82,7 @@ def main():
 
     sp = split_time_series(data, level="month", period=2)
 
-    for model in ["svm", "xgb", "gb", "forest", "nn"]:
+    for model in ["svm"]:
         print(model)
         print()
         os.makedirs(SKYNET_PATH + "/feature_selection/filter_wrapper/scores/%s" % model, exist_ok=True)
