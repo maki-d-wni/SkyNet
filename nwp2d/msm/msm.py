@@ -9,6 +9,109 @@ import matplotlib.animation as animation
 
 from mpl_toolkits.basemap import Basemap
 
+
+class MSMBase(object):
+    _params = {
+        'surface': [
+            'Pressure reduced to MSL',
+            'u-component of wind',
+            'v-component of wind',
+            'Temperature',
+            'Relative humidity',
+            'Low cloud cover',
+            'Medium cloud cover',
+            'High cloud cover',
+            'Total cloud cover',
+            'Total precipitation'
+        ],
+        'upper': [
+            'Geopotential height',
+            'Relative humidity',
+            'Temperature',
+            'Vertical velocity [pressure]',
+            'u-component of wind',
+            'v-component of wind'
+        ]
+    }
+    _level = {
+        'surface': ['surface'],
+        'upper': [
+            '300',
+            '400',
+            '500',
+            '600',
+            '700',
+            '800',
+            '850',
+            '900',
+            '925',
+            '950',
+            '975',
+            '1000'
+        ]
+    }
+    _base_time = {
+        'surface': ['%02d' % t for t in range(0, 24, 3)],
+        'upper': ['%02d' % t for t in range(3, 24, 6)]
+    }
+    _validity_time = {
+        'surface': ['%02d' % t for t in range(40)],
+        'upper': ['%02d' % t for t in range(0, 40, 3)]
+    }
+    _shape = {
+        'surface': (505, 481),
+        'upper': (253, 241)
+    }
+
+
+class MSM(MSMBase):
+    @property
+    def params(self):
+        return self._params
+
+    @params.setter
+    def params(self, params):
+        self._params = params
+
+    @property
+    def level(self):
+        return self._level
+
+    @level.setter
+    def level(self, level):
+        self._level = level
+
+    @property
+    def base_time(self):
+        return self._base_time
+
+    @base_time.setter
+    def base_time(self, base_time):
+        self._base_time = base_time
+
+    @property
+    def validity_time(self):
+        return self._validity_time
+
+    @validity_time.setter
+    def validity_time(self, validity_time):
+        self._validity_time = validity_time
+
+    @property
+    def shape(self):
+        return self._shape
+
+    @shape.setter
+    def shape(self, shape):
+        self._shape = shape
+
+    def read(self, path):
+        pass
+
+    def show(self):
+        pass
+
+
 GRIB = {
     "surface": {
         "tag_id": {

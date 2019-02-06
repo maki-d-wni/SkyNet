@@ -1,12 +1,9 @@
-import argparse
-import glob
-import datetime
-import pandas as pd
-
-from RU import *
-
-
 def read(icaos, date, time):
+    import glob
+    import json
+    import pandas as pd
+    from RU import RU
+
     files = glob.glob(DATA_PATH + "/402100440/%s_%s*" % (date, time))
 
     df_metars = {icao: None for icao in icaos}
@@ -28,6 +25,10 @@ def read(icaos, date, time):
 
 
 def live(icaos, date, time):
+    import glob
+    import datetime
+    import pandas as pd
+
     files = glob.glob(LIVE_PATH + "/*.html")
 
     metar = read(icaos, date, time)
@@ -74,6 +75,7 @@ def live(icaos, date, time):
 
 
 def __metar_count_data(metar, ext):
+    import pandas as pd
     count = metar.pop("data/%s_count" % ext)
     sl = len(ext)
     exts = [key[sl + 1:] for key in metar.keys() if key[:sl] == ext]
@@ -90,6 +92,8 @@ def __metar_count_data(metar, ext):
 
 
 def main():
+    import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--icao")
     parser.add_argument("--date")
