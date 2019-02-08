@@ -24,9 +24,9 @@ class NWPFrame(DataFrame):
     def append(self, other, axis=0, key=None, ignore_index=False, verify_integrity=False, inplace=False, **kwargs):
         from pandas.core.reshape.concat import concat
         if axis == 0:
-            new_data = concat([self, DataFrame(other)], axis=axis)
+            new_data = concat([self, DataFrame(other, index=key)], axis=axis)
         else:
-            new_data = concat([self, DataFrame(other)], axis=axis)
+            new_data = concat([self, DataFrame(other, columns=key)], axis=axis)
 
         if inplace:
             self._update_inplace(new_data)

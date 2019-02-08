@@ -1,15 +1,3 @@
-import os
-import glob
-import json
-import pygrib
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-
-from mpl_toolkits.basemap import Basemap
-
-
 class MSMBase(object):
     _params = {
         'surface': [
@@ -112,81 +100,31 @@ class MSM(MSMBase):
         pass
 
 
-GRIB = {
-    "surface": {
-        "tag_id": {
-            "FT_0-15": "400220001",
-            "FT_16-33": "400220115"
-        },
-        'Pressure reduced to MSL': 'Pressure reduced to MSL',
-        'Pressure': 'Pressure',
-        'Wind speed': 'Wind speed',
-        'Wind direction': 'Wind direction',
-        'u-component of wind': 'u-component of wind',
-        'v-component of wind': 'v-component of wind',
-        'Temperature': 'Temperature',
-        'Relative humidity': 'Relative humidity',
-        'Low cloud cover': 'Low cloud cover',
-        'Medium cloud cover': 'Medium cloud cover',
-        'High cloud cover': 'High cloud cover',
-        'Total cloud cover': 'Total cloud cover',
-        'Total precipitation': 'Total precipitation',
-        'Downward short-wave radiation flux': 'Downward short-wave radiation flux'
-    },
-    "upper": {
-        "tag_id": {
-            "FT_0-15": "400220009",
-            "FT_16-33": "400220123"
-        },
-        'Geopotential height': 'Geopotential height',
-        'Wind speed': 'Wind speed',
-        'Wind direction': 'Wind direction',
-        'u-component of wind': 'u-component of wind',
-        'v-component of wind': 'v-component of wind',
-        'Temperature': 'Temperature',
-        'Vertical velocity': 'Vertical velocity [pressure]',
-        'Relative humidity': 'Relative humidity'
+def read_airport(file, icao, layer):
+    import pygrib
+    import pandas as pd
+    latlon = get_airport_latlon([icao])
+    idx_latlon = latlon_to_indices(latlon, layer)
 
-    }
-}
+    grbs = pygrib.open(file)
 
+    df = pd.DataFrame()
+    for grb in grbs:
+        ft = grb.forecastTime
+        date = grb.validDate.strftime("%Y-%m-%d %H:%M")
+        df.loc[ft, 'date'] = date
+        pn = grb.parameterName
+        if layer == 'upper':
+            pn = pn[:4] + str(grb.level)
+        lat = idx_latlon[icao][0]
+        lon = idx_latlon[icao][1]
+        df.loc[ft, pn] = grb.values[lat, lon]
 
-def read_airports(layer, icaos, date):
-    msm_dir = {"surface": ["400220001", "400220115"], "upper": ["400220009", "400220123"]}
-
-    if layer == "surface":
-        file_pair = __get_file_pair(dir_pair=msm_dir[layer], date=date)
-
-    elif layer == "upper":
-        file_pair = __get_file_pair(dir_pair=msm_dir[layer], date=date)
-
-    else:
-        raise Exception("layer must be 'surface' or 'upper'.")
-
-    df_grbs = {icao: pd.DataFrame() for icao in icaos}
-
-    latlon = __get_airport_latlon(icaos=icaos)
-    idx_latlon = __convert_latlon_to_indices(latlon, layer=layer)
-
-    for icao in icaos:
-        for f in file_pair:
-            grbs = pygrib.open(f)
-            for grb in grbs:
-                ft = grb.forecastTime
-                if layer == "surface":
-                    date = grb.validDate.strftime("%Y%m%d%H%M")
-                    df_grbs[icao].loc[ft, "date"] = date
-                pn = grb.parameterName
-                if layer == "upper":
-                    pn = pn[:4] + str(grb.level)
-                lat = idx_latlon[icao][0]
-                lon = idx_latlon[icao][1]
-                df_grbs[icao].loc[ft, pn] = grb.values[lat, lon]
-
-    return df_grbs
+    return df
 
 
 def concat_surface_upper(surface, upper):
+    import pandas as pd
     icaos = list(surface.keys())
     df_grbs = {icao: None for icao in icaos}
     for icao in icaos:
@@ -195,11 +133,9 @@ def concat_surface_upper(surface, upper):
     return df_grbs
 
 
-def read(layer, date, time):
-    print(date)
-
-
 def plot_forecast_map(file_path, layer, params, forecast_time, level=None, alpha=1., show=True, save_path=None):
+    import pygrib
+    from mpl_toolkits.basemap import Basemap
     grbs = pygrib.open(file_path)
 
     lat1 = 22.4
@@ -311,6 +247,8 @@ def plot_forecast_map(file_path, layer, params, forecast_time, level=None, alpha
 
 def animate_forecast_map(save_file, date, time, layer, params, level,
                          alpha=1., show=False, cache=True):
+    import os
+    import glob
     os.makedirs(IMAGE_PATH + "/tmp", exist_ok=True)
 
     if not cache:
@@ -357,83 +295,63 @@ def animate_forecast_map(save_file, date, time, layer, params, level,
         plt.show()
 
 
-def __get_icao():
-    airports_info = json.load(open(DATA_PATH + "/all_airport_data.json"))
-    icaos = airports_info["airport"].keys()
-    icaos = [icao for icao in icaos if icao[:2] == "RJ"]
+def get_jp_icaos():
+    import re
+    from skynet import ICAOS, AIRPORT_LATLON, MSM_BBOX
+
+    icaos = [icao for icao in ICAOS if re.match('RJ', icao)]
     icaos.sort()
 
-    lat1_grb = 22.4
-    lat2_grb = 47.6
-    lon1_grb = 120.
-    lon2_grb = 150.
+    lat1_grb = MSM_BBOX[1]
+    lat2_grb = MSM_BBOX[3]
+    lon1_grb = MSM_BBOX[0]
+    lon2_grb = MSM_BBOX[2]
 
-    latlon = {icao: (float(airports_info["airport"][icao][-1]["lat"]),
-                     float(airports_info["airport"][icao][-1]["lon"]))
-              for icao in icaos}
-
-    icaos = {icao: (latlon[icao][0], latlon[icao][1]) for icao in icaos
-             if (lat1_grb <= latlon[icao][0]) and (latlon[icao][0] <= lat2_grb)
-             and (lon1_grb <= latlon[icao][1]) and (latlon[icao][1] <= lon2_grb)}
+    icaos = [icao for icao in icaos
+             if (lat1_grb <= AIRPORT_LATLON[icao]['lat']) and (AIRPORT_LATLON[icao]['lat'] <= lat2_grb)
+             and (lon1_grb <= AIRPORT_LATLON[icao]['lon']) and (AIRPORT_LATLON[icao]['lon'] <= lon2_grb)]
 
     return icaos
 
 
-def __get_airport_latlon(icaos):
-    airports_info = json.load(open(DATA_PATH + "/tss_sky_ml/all_airport_data.json"))
-    latlon = {icao: (float(airports_info["airport"][icao][-1]["lat"]),
-                     float(airports_info["airport"][icao][-1]["lon"]))
-              for icao in icaos}
+def get_airport_latlon(icaos):
+    from skynet import AIRPORT_LATLON
+    latlon = {
+        icao: {
+            'lat': AIRPORT_LATLON[icao]["lat"],
+            'lon': AIRPORT_LATLON[icao]["lon"]
+        } for icao in icaos if icao in AIRPORT_LATLON.keys()
+    }
 
     return latlon
 
 
-def __convert_latlon_to_indices(latlon, layer):
+def latlon_to_indices(latlon, layer):
+    from skynet import AIRPORT_LATLON, MSM_BBOX, MSM_SHAPE
+
     icaos = list(latlon.keys())
 
-    lat1_grb = 22.4
-    lat2_grb = 47.6
-    lon1_grb = 120.
-    lon2_grb = 150.
+    lat1_grb = MSM_BBOX[1]
+    lat2_grb = MSM_BBOX[3]
+    lon1_grb = MSM_BBOX[0]
+    lon2_grb = MSM_BBOX[2]
 
     if layer == "surface":
-        n_lats = 505
-        n_lons = 481
+        n_lats = MSM_SHAPE['surface'][0]
+        n_lons = MSM_SHAPE['surface'][1]
     else:
-        n_lats = 253
-        n_lons = 241
+        n_lats = MSM_SHAPE['upper'][0]
+        n_lons = MSM_SHAPE['upper'][1]
 
-    icaos = {icao: (latlon[icao][0], latlon[icao][1]) for icao in icaos
-             if (lat1_grb <= latlon[icao][0]) and (latlon[icao][0] <= lat2_grb)
-             and (lon1_grb <= latlon[icao][1]) and (latlon[icao][1] <= lon2_grb)}
-
-    idx_latlon = {icao: (round(n_lats * (latlon[icao][0] - lat1_grb) / (lat2_grb - lat1_grb)),
-                         round(n_lons * (latlon[icao][1] - lon1_grb) / (lon2_grb - lon1_grb)))
-                  for icao in icaos}
+    idx_latlon = {
+        icao: (
+            round(n_lats * (AIRPORT_LATLON[icao]['lat'] - lat1_grb) / (lat2_grb - lat1_grb)),
+            round(n_lons * (AIRPORT_LATLON[icao]['lon'] - lon1_grb) / (lon2_grb - lon1_grb))
+        )
+        for icao in icaos
+    }
 
     return idx_latlon
-
-
-def __get_file_pair(dir_pair, date):
-    print(dir_pair)
-    f1 = glob.glob(DATA_PATH + "/tss_sky_ml/" + dir_pair[0] + "/%s*" % date)
-    f2 = glob.glob(DATA_PATH + "/tss_sky_ml/" + dir_pair[1] + "/%s*" % date)
-    if len(f1) > 0 and len(f2) > 0:
-        f1_tree = f1[0].split("/")
-        f2_tree = f2[0].split("/")
-        if f1_tree[-1][:8] == f2_tree[-1][:8]:
-            file_pair = (f1[0], f2[0])
-        else:
-            raise Exception("Date of surface file is not different from upper layer file.")
-
-    elif len(f1) == 0 and len(f2) > 0:
-        raise Exception("There is not surface layer file.")
-    elif len(f1) > 0 and len(f2) == 0:
-        raise Exception("There is not upper layer file.")
-    else:
-        raise Exception("There are not surface and upper layer file.")
-
-    return file_pair
 
 
 def main():
@@ -454,33 +372,8 @@ def main():
     print(df_grbs["RJFK"])
     """
 
-    import time
-
-    s = time.time()
-    # 面データ表示
-    layer = "surface"
-    params = ["Wind speed", "Wind direction"]
-    level = "surface"
-
-    forecast_time = range(1)
-    plot_forecast_map(
-        file_path=DATA_PATH + '/tss_sky_ml/%s/20180704_030000.grib2' % GRIB[layer]["tag_id"]["FT_0-15"],
-        layer=layer,
-        params=params,
-        forecast_time=forecast_time,
-        level=level,
-        alpha=0.5,
-        show=False,
-        save_path=IMAGE_PATH + "/tmp"
-    )
-
-    print("running time", time.time() - s)
-
-    """
-    animate_forecast_map(MOVIE_PATH + "/%s_%s_%s_%s.mp4" % (params[0], level, date, time),
-                         date, time, layer, params, level,
-                         alpha=1., show=True, cache=False)
-    """
+    path = '/home/maki-d/NFS/floria/part1/MSM/surface/bt00/vt0015/20150101_000000.000/20150101_000000.000.1'
+    df = read_airport(path, 'RJAA', layer='surface')
 
 
 if __name__ == "__main__":
