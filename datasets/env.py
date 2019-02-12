@@ -2,31 +2,20 @@ import re
 import os
 
 
-def move_nwp_file(data_path, nwp_info):
-    pattern = re.compile(r'\d{8}_\d{6}.\d{3}')
-    for layer in nwp_info:
-        for tag_id in nwp_info[layer]:
-            bt = nwp_info[layer][tag_id]['base time']
-            vt = nwp_info[layer][tag_id]['validity time']
-            file_path = '%s/%s' % (data_path, tag_id)
-            output_path = '%s/%s/bt%s/vt%s' % (data_path, layer, bt, vt)
-            __move_nwp_file(file_path, output_path, pattern)
-
-
-def __move_nwp_file(file_path, output_path, pattern):
-    list_dir = os.listdir(file_path)
+def move_nwp_file(input_path, output_path, pattern):
+    list_dir = os.listdir(input_path)
     list_dir.sort()
     for d in list_dir:
-        if os.path.isdir(file_path + "/" + d):
-            if pattern.match(d):
-                print('mv %s/%s %s' % (file_path, d, output_path))
-                os.system('mv %s/%s %s/%s' % (file_path, d, output_path, d))
+        if os.path.isdir(input_path + "/" + d):
+            if re.match(pattern, d):
+                print('mv %s/%s %s' % (input_path, d, output_path))
+                os.system('mv %s/%s %s/%s' % (input_path, d, output_path, d))
             else:
-                __move_nwp_file(file_path + "/" + d, output_path, pattern)
+                move_nwp_file(input_path + "/" + d, output_path, pattern)
         else:
-            if not pattern.match(d):
+            if not re.match(pattern, d):
                 print('remove %s' % d)
-                os.system('rm \'%s/%s\'' % (file_path, d))
+                os.system('rm \'%s/%s\'' % (input_path, d))
 
 
 def convert_dict_construction(old, new: dict, pwd: str, depth: int):
@@ -85,3 +74,27 @@ def __check_iterable(obj):
             return True
     else:
         return False
+
+
+def main():
+    from skynet import MSM_INFO
+
+    data_path = '/Users/makino/PycharmProjects/SkyCC/data/grib2/MSM'
+    tagid_dirs = os.listdir(data_path)
+
+    for tagid in MSM_INFO:
+        if tagid in tagid_dirs:
+            bt = MSM_INFO[tagid]['base time']
+            fvt = MSM_INFO[tagid]['first validity time']
+            lvt = MSM_INFO[tagid]['last validity time']
+            layer = MSM_INFO[tagid]['layer']
+
+            input_path = '%s/%s' % (data_path, tagid)
+            output_path = '%s/%s/bt%s/vt%s%s/' % (data_path, layer, bt, fvt, lvt)
+
+            # os.makedirs(output_path, exist_ok=True)
+            move_nwp_file(input_path, output_path, pattern=r'\d{8}_\d{6}')
+
+
+if __name__ == '__main__':
+    main()

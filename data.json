@@ -105,8 +105,8 @@
     "400220123": {
       "layer": "upper",
       "base time": "03",
-      "first_ft": "16",
-      "last_ft": "33"
+      "first validity time": "16",
+      "last validity time": "33"
     },
     "parameter": {
       "surface": [

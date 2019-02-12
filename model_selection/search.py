@@ -48,32 +48,27 @@ def main():
     import matplotlib.pyplot as plt
     from sklearn.preprocessing import StandardScaler
     from sklearn.metrics import recall_score
-    from skynet import DATA_PATH, MODEL_PATH
-    from skynet.data_handling import get_init_response
-    from skynet.data_handling import read_learning_data
-    from skynet.data_handling import split_time_series
-    from skynet.data_handling import balanced
-    from skynet.data_handling.preprocessing import PreProcessor
-    from skynet.ensemble import SkyRandomForest
-
-    preprocess = PreProcessor(norm=False, binary=False)
+    from sklearn.ensemble import RandomForestClassifier
+    from skynet import USER_DIR, DATA_DIR
+    from skynet.datasets import learning_data
+    from skynet.datasets import convert
 
     params = [
-        {'n_estimators': 10, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': 100},
-        {'n_estimators': 10, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': 100},
-        {'n_estimators': 10, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': 100},
-        {'n_estimators': 10, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': 10},
-        {'n_estimators': 10, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': 100},
-        {'n_estimators': 10, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': 100}
+        {'n_estimators': 10, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': 'auto'},
+        {'n_estimators': 10, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': 'auto'},
+        {'n_estimators': 10, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': 'auto'},
+        {'n_estimators': 10, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': 'auto'},
+        {'n_estimators': 10, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': 'auto'},
+        {'n_estimators': 10, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': 'auto'}
     ]
 
     threat = [
-        0.6,
-        0.4,
-        0.4,
+        0.2,
+        0.2,
         0.3,
-        0.4,
-        0.6
+        0.3,
+        0.3,
+        0.3
     ]
 
     n_clfs = [
@@ -85,34 +80,36 @@ def main():
         100
     ]
 
-    target = get_init_response()
+    target = learning_data.get_init_response()
 
-    icao = "RJCC"
+    icao = "RJBB"
 
-    train = read_learning_data(DATA_PATH + "/skynet/train_%s.pkl" % icao)
-    test = read_learning_data(DATA_PATH + "/skynet/test_%s.pkl" % icao)
+    train = learning_data.read_learning_data('%s/skynet/train_%s.pkl' % (DATA_DIR, icao))
+    test = learning_data.read_learning_data('%s/skynet/test_%s.pkl' % (DATA_DIR, icao))
 
     # feature増やしてからデータ構造を（入力、正解）に戻す
-    preprocess.fit(train.iloc[:, :-1], train.iloc[:, -1], test.iloc[:, :-1], test.iloc[:, -1])
-    train = pd.concat([preprocess.X_train, preprocess.y_train], axis=1)
-    test = pd.concat([preprocess.X_test, preprocess.y_test], axis=1)
 
     fets = [f for f in train.keys() if not (f in target)]
 
     # 時系列でデータを分割
-    sptrain = split_time_series(train, level="month", period=2)
-    sptest = split_time_series(test, level="month", period=2)
+    sptrain = convert.split_time_series(train, train['date'], level="month", period=2)
+    sptest = convert.split_time_series(test, test['date'], level="month", period=2)
 
     ss = StandardScaler()
     date = datetime.datetime.now().strftime("%Y%m%d")
-    # date = "20180824"
-    for i_term, key in enumerate(sptrain):
-        os.makedirs(MODEL_PATH + "/%s/forest/%s/%s" % (icao, date, key), exist_ok=True)
+    model_dir = '%s/PycharmProjects/SkyCC/trained_models' % USER_DIR
+
+    period_keys = ['month:9-10', 'month:11-12']
+    for i_term, key in enumerate(period_keys):
+        os.makedirs(
+            '%s/%s/forest/%s/%s'
+            % (model_dir, icao, date, key), exist_ok=True
+        )
 
         X_train = sptrain[key][fets]
         X_train = pd.DataFrame(ss.fit_transform(X_train), columns=X_train.keys())
         y_train = sptrain[key][target]
-        X_train, y_train = balanced(X_train, y_train)
+        X_train, y_train = convert.balanced(X_train, y_train)
 
         X_test = sptest[key][fets]
         X_test = pd.DataFrame(ss.fit_transform(X_test), columns=X_test.keys())
@@ -121,13 +118,13 @@ def main():
         cv = False
         if cv:
             best_score, best_params = grid_search_cv(
-                SkyRandomForest(),
+                RandomForestClassifier(),
                 X_train,
                 y_train,
                 param_grid={"n_estimators": [10, 100],
                             "min_samples_split": [2, 10],
                             "min_samples_leaf": [1, 10],
-                            "max_features": ["auto", 2, 10, 30, 70, 100]},
+                            "max_features": ["auto", 2, 10, 30, 70]},
                 scoring="recall"
             )
 
@@ -135,7 +132,7 @@ def main():
             print("best params", best_params)
             print()
 
-            model = SkyRandomForest(**best_params)
+            model = RandomForestClassifier(**best_params)
             model.fit(X_train.values, y_train.values[:, 0])
             p = model.predict(X_test.values)
 
@@ -143,14 +140,14 @@ def main():
             y_pred = np.where(p > 1, 0, 1)
             print(recall_score(y_true=y_true, y_pred=y_pred))
 
-        search = False
+        search = True
         y_true = np.where(y_test > 1, 0, 1)
         p_rf = np.zeros((len(X_test), n_clfs[i_term]))
         score_rf = np.zeros(n_clfs[i_term])
         i = 0
         if search:
             while True:
-                clf = SkyRandomForest(**params[i_term])
+                clf = RandomForestClassifier(**params[i_term])
                 clf.fit(X_train.values, y_train.values[:, 0])
                 p = clf.predict(X_test.values)
 
@@ -162,18 +159,18 @@ def main():
                     print(scr)
                     p_rf[:, i] = p
                     score_rf[i] = scr
-                    pickle.dump(clf, open(MODEL_PATH + "/%s/forest/%s/%s/rf%03d.pkl"
-                                          % (icao, date, key, i), "wb"))
+                    pickle.dump(clf, open("%s/%s/forest/%s/%s/rf%03d.pkl"
+                                          % (model_dir, icao, date, key, i), "wb"))
                     i += 1
 
                 if i == n_clfs[i_term]:
                     break
 
-        learning_model = True
+        learning_model = False
         if learning_model:
             for i in range(n_clfs[i_term]):
-                clf = pickle.load(open(MODEL_PATH + "/%s/forest/%s/%s/rf%03d.pkl"
-                                       % (icao, date, key, i), "rb"))
+                clf = pickle.load(open("%s/%s/forest/%s/%s/rf%03d.pkl"
+                                       % (model_dir, icao, date, key, i), "rb"))
                 p_rf[:, i] = clf.predict(X_test.values)
 
                 y_pred = np.where(p_rf[:, i] > 1, 0, 1)

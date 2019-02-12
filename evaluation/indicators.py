@@ -1,7 +1,7 @@
 import numpy as np
 
 from sklearn.metrics import classification_report, accuracy_score
-from skynet.data_handling import get_init_vis_level
+from skynet.datasets import learning_data
 
 
 class Evaluator(object):
@@ -11,7 +11,7 @@ class Evaluator(object):
         self.rmse_ = None
 
     def evaluate(self, p, y, threshold=None, conf_mat=False, eval_index=False):
-        label = np.array(list(get_init_vis_level().keys()))
+        label = np.array(list(learning_data.get_init_vis_level().keys()))
         if label.min() != 0. or label.max() != 1.:
             if threshold is None:
                 threshold = int(len(label) / 2)

@@ -8,6 +8,7 @@ __config.read('%s/config.ini' % os.path.dirname(os.path.abspath(__file__)))
 MY_DIR = __config.get('path', 'my_dir')
 USER_DIR = __config.get('path', 'user_dir')
 SHARE_DIR = __config.get('path', 'share_dir')
+DATA_DIR = __config.get('path', 'data_dir')
 MSM_DATA_DIR = __config.get('path', 'msm_dir')
 
 __data = json.load(open('%s/data.json' % os.path.dirname(os.path.abspath(__file__)), 'r'))

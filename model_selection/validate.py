@@ -3,11 +3,10 @@ import pandas as pd
 
 from sklearn import clone
 
-from skynet.data_handling import balanced
-from skynet.evaluation import SCORES
-
 
 def cross_validation(model, X, y, cv=3, scoring="f1"):
+    from skynet.datasets import convert
+    from skynet.evaluation import SCORES
     idx = {int(l): np.where(y.values[:, 0] == l)[0] for l in np.unique(y.values[:, 0])}
     spidx = {}
     for i in range(cv):
@@ -27,7 +26,7 @@ def cross_validation(model, X, y, cv=3, scoring="f1"):
     for i in range(cv):
         X_train = pd.concat([spX[n] for n in spX if n != i])
         y_train = pd.concat([spy[n] for n in spy if n != i])
-        X_train, y_train = balanced(X_train, y_train)
+        X_train, y_train = convert.balanced(X_train, y_train)
         X_train = X_train.values
         y_train = y_train.values[:, 0]
 

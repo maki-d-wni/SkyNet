@@ -208,19 +208,25 @@ class NWPFrame(DataFrame):
         else:
             return new_data
 
-    def strtime_to_datetime(self, date_key, fmt):
+    def strtime_to_datetime(self, date_key, fmt, inplace=False):
         import datetime
         date = self[date_key].astype(int).astype(str)
-        self[date_key] = [datetime.datetime.strptime(d, fmt) for d in date]
+        if inplace:
+            self[date_key] = [datetime.datetime.strptime(d, fmt) for d in date]
+        else:
+            return [datetime.datetime.strptime(d, fmt) for d in date]
 
-    def datetime_to_strtime(self, date_key, fmt):
-        self[date_key] = [d.strftime(fmt) for d in self[date_key]]
+    def datetime_to_strtime(self, date_key, fmt, inplace=False):
+        if inplace:
+            self[date_key] = [d.strftime(fmt) for d in self[date_key]]
+        else:
+            return [d.strftime(fmt) for d in self[date_key]]
 
 
 def main():
     from skynet.datasets.learning_data import read_learning_data
 
-    path = '/home/maki-d/PycharmProjects/SkyCC/data/pickle/learning/svm/test_RJCC.pkl'
+    path = '/Users/makino/PycharmProjects/SkyCC/data/skynet/test_RJCC.pkl'
     data = read_learning_data(path)
 
     ndf = NWPFrame(data)

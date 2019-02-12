@@ -55,14 +55,14 @@ def split_time_series(data, date, level="month", period=2, index_date=False):
                 ext_date = [d for d in date if d[i:e] in ms]
                 spd[key] = data.loc[ext_date].reset_index(drop=True)
                 if index_date:
-                    spd[key].index = _strtime_to_datetime(ext_date)
+                    spd[key].index = __strtime_to_datetime(ext_date)
             else:
                 key = "month:%d-%d" % (idx, idx + period - 1)
                 ms = ["{0:02d}".format(m) for m in range(idx, idx + period)]
                 ext_date = [d for d in date if d[i:e] in ms]
                 spd[key] = data.loc[ext_date].reset_index(drop=True)
                 if index_date:
-                    spd[key].index = _strtime_to_datetime(ext_date)
+                    spd[key].index = __strtime_to_datetime(ext_date)
     elif level == "day":
         # i = 6
         # e = 8
@@ -75,13 +75,13 @@ def split_time_series(data, date, level="month", period=2, index_date=False):
     return spd
 
 
-def _strtime_to_datetime(date):
+def __strtime_to_datetime(date):
     date = np.array(date).astype(int).astype(str)
     date = [datetime.datetime.strptime(d, "%Y%m%d%H%M") for d in date]
     return date
 
 
-def _datetime_to_strtime(date):
+def __datetime_to_strtime(date):
     date = [d.strftime("%Y%m%d%H%M") for d in date]
     return date
 
