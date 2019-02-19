@@ -1,8 +1,9 @@
 import pickle
 
 
-def get_init_features():
-    f = [
+def get_init_features(code='long'):
+    from skynet import MSM_INFO
+    fs = [
         'date',
         'Pressure reduced to MSL',
         'Pressure',
@@ -86,8 +87,55 @@ def get_init_features():
         'v-co300',
         'Temp300',
         'Vert300',
-        'Rela300']
-    return f
+        'Rela300'
+    ]
+    if code == 'long':
+        return fs
+    elif code == 'wni':
+        wni_code = {
+            'surface': [
+                'SSPRSS',
+                'ARPRSS',
+                'UWIND',
+                'VWIND',
+                'AIRTMP',
+                'RHUM',
+                'LOWCLD',
+                'MIDCLD',
+                'UPRCLD',
+                'AMTCLD',
+                'PRCRIN_1HOUR',
+                'SOLRAD'
+            ],
+            'upper':
+                ['GPHGT',
+                 'UWIND',
+                 'VWIND',
+                 'AIRTMP',
+                 'ASCCRR',
+                 'RHUM'
+
+                 ]
+        }
+
+        for layer in wni_code:
+            params_long = MSM_INFO['parameter'][layer]
+            params_wni = wni_code[layer]
+
+            if layer == 'surface':
+                for p_long, p_wni in zip(params_long, params_wni):
+                    old_param = p_long
+                    new_param = 'SFC-' + p_wni
+                    fs = [f.replace(old_param, new_param) for f in fs]
+
+            if layer == 'upper':
+                for l in MSM_INFO['level'][layer]:
+                    for p_long, p_wni in zip(params_long, params_wni):
+                        old_param = p_long[:4] + l
+                        new_param = l + '-' + p_wni
+                        fs = [f.replace(old_param, new_param) for f in fs]
+
+        return fs
 
 
 def get_init_response():
@@ -109,9 +157,8 @@ def read_learning_data(path):
 
 
 def main():
-    path = '/home/maki-d/PycharmProjects/SkyCC/data/pickle/learning/svm/test_RJCC.pkl'
-    data = read_learning_data(path)
-    print(data)
+    fets = get_init_features('wni')
+    print(fets)
 
 
 if __name__ == '__main__':

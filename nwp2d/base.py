@@ -210,7 +210,16 @@ class NWPFrame(DataFrame):
 
     def strtime_to_datetime(self, date_key, fmt, inplace=False):
         import datetime
-        date = self[date_key].astype(int).astype(str)
+        try:
+            date = self[date_key].astype(int)
+        except ValueError:
+            date = self[date_key]
+
+        try:
+            date = date.astype(str)
+        except ValueError:
+            date = self[date_key]
+
         if inplace:
             self[date_key] = [datetime.datetime.strptime(d, fmt) for d in date]
         else:

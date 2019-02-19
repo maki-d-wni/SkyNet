@@ -1,4 +1,5 @@
 import datetime
+
 import numpy as np
 import pandas as pd
 
@@ -111,3 +112,46 @@ def balanced(X, y):
         y = y[shuffled]
 
     return X, y
+
+
+def main():
+    from skynet import DATA_DIR
+    from skynet.nwp2d import NWPFrame
+
+    icao = 'RJOT'
+
+    # metar読み込み
+    metar_path = '%s/text/metar' % DATA_DIR
+    with open('%s/head.txt' % metar_path, 'r') as f:
+        header = f.read()
+    header = header.split(sep=',')
+
+    data15 = pd.read_csv('%s/2015/%s.txt' % (metar_path, icao), sep=',')
+    data16 = pd.read_csv('%s/2016/%s.txt' % (metar_path, icao), sep=',')
+    data17 = pd.read_csv('%s/2017/%s.txt' % (metar_path, icao), sep=',', names=header)
+
+    metar_data = pd.concat([data15, data16, data17])
+    metar_data = NWPFrame(metar_data)
+
+    metar_data.strtime_to_datetime('date', '%Y%m%d%H%M%S', inplace=True)
+    metar_data.datetime_to_strtime('date', '%Y-%m-%d %H:%M', inplace=True)
+    metar_data.drop_duplicates('date', inplace=True)
+    metar_data.index = metar_data['date'].values
+
+    metar_keys = ['date', 'visibility', 'str_cloud']
+    metar_data = metar_data[metar_keys]
+
+    # MSM読み込み
+    msm_data = pd.read_csv('%s/msm_airport/%s.csv' % (DATA_DIR, icao))
+
+    msm_data.rename(columns={'Unnamed: 0': 'date'}, inplace=True)
+    msm_data.index = msm_data['date'].values
+    msm_data.sort_index(inplace=True)
+
+    X = pd.concat([msm_data, metar_data], axis=1)
+
+    print(X)
+
+
+if __name__ == '__main__':
+    main()

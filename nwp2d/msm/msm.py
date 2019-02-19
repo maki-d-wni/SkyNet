@@ -355,6 +355,7 @@ def latlon_to_indices(latlon, layer):
 
 
 def main():
+    from skynet import MSM_BBOX, AIRPORT_LATLON
     """
     date = "20180704"
     time = "030000"
@@ -372,8 +373,37 @@ def main():
     print(df_grbs["RJFK"])
     """
 
-    path = '/home/maki-d/NFS/floria/part1/MSM/surface/bt00/vt0015/20150101_000000.000/20150101_000000.000.1'
-    df = read_airport(path, 'RJAA', layer='surface')
+    # path = '/home/maki-d/NFS/floria/part1/MSM/surface/bt00/vt0015/20150101_000000.000/20150101_000000.000.1'
+    # df = read_airport(path, 'RJAA', layer='surface')
+
+    jp_icaos = [
+        'RJOT',
+        'RJAA',
+        'RJSC',
+        'RJSI',
+        'RJSK',
+        'RJSM',
+        'RJSN',
+        'RJSS',
+        'RJTT',
+        'ROAH',
+        'RJOC',
+        'RJOO',
+        'RJBB',
+        'RJCC',
+        'RJCH',
+        'RJFF',
+        'RJFK',
+        'RJGG',
+        'RJNK',
+        'RJOA',
+    ]
+
+    print(MSM_BBOX)
+    latlon = get_airport_latlon(jp_icaos)
+    print(latlon)
+    idx_latlon = latlon_to_indices(latlon, layer='surface')
+    print(idx_latlon)
 
 
 if __name__ == "__main__":
