@@ -122,8 +122,16 @@ def main():
 
     # jp_icaos = msm.get_jp_icaos()
     jp_icaos = [
-        'RJOT',
-        'RJAA',
+        # 'RJOT',
+        # 'RJAA',
+        # 'RJBB',
+        'RJCC',
+        'RJCH',
+        'RJFF',
+        'RJFK',
+        'RJGG',
+        'RJNK',
+        'RJOA',
         'RJSC',
         'RJSI',
         'RJSK',
@@ -134,15 +142,9 @@ def main():
         'ROAH',
         'RJOC',
         'RJOO',
-        # 'RJBB',
-        'RJCC',
-        'RJCH',
-        'RJFF',
-        'RJFK',
-        'RJGG',
-        'RJNK',
-        'RJOA',
     ]
+
+    msm_airport_ft0(jp_icaos)
 
     icao = 'RJOT'
 
