@@ -500,7 +500,8 @@ def main():
     idx_latlon = latlon_to_indices(latlon, layer='surface')
     print(idx_latlon)
 
-    from skynet import MSM_INFO
+    from skynet import MY_DIR
+    print(MY_DIR)
 
     drawer = MSMDrawer(msm_files, params=['u-component of wind', 'v-component of wind'], forecast_time=[0])
     drawer.run()
