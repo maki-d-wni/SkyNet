@@ -2,12 +2,11 @@ import datetime
 import numpy as np
 import pandas as pd
 
-from skynet.data_handling import area_forecast as af
-from skynet.data_handling import human_edit as he
+import skynet.nwp2d as npd
 
 
 def daily_area_forecast(icao, date, time):
-    data_af = af.read(icaos=[icao], date=date, time=time)
+    data_af = npd.area_forecast.read(icaos=[icao], date=date, time=time)
     data_af = data_af[icao]
     data_af = convert_to_datestring(data_af, date_header=["year", "month", "day", "hour", "min"])
 
@@ -15,7 +14,7 @@ def daily_area_forecast(icao, date, time):
 
 
 def daily_human_edit(icao, date, time):
-    data_he = he.read(icaos=[icao], date=date, time=time)
+    data_he = npd.human_edit.read(icaos=[icao], date=date, time=time)
     data_he = data_he[icao]
     data_he = convert_to_datestring(data_he, date_header=["year", "month", "day", "hour", "min"])
 

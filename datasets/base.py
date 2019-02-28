@@ -1,6 +1,3 @@
-import pickle
-
-
 def get_init_features(code='long'):
     from skynet import MSM_INFO
     fs = [
@@ -139,19 +136,45 @@ def get_init_features(code='long'):
 
 
 def get_init_response():
-    r = ["visibility_rank"]
+    r = [
+        "visibility_rank"
+    ]
     return r
 
 
 def get_init_vis_level():
-    vis_level = {0: 0, 1: 800, 2: 1600, 3: 2600, 4: 3600, 5: 4800, 6: 6000, 7: 7400, 8: 8800}
+    vis_level = {
+        0: 0, 1: 800, 2: 1600, 3: 2600, 4: 3600, 5: 4800, 6: 6000, 7: 7400, 8: 8800
+    }
     return vis_level
 
 
-def read_learning_data(path):
+def to_visrank(vis):
+    import numpy as np
+
+    label = np.zeros(len(vis))
+    v = list(get_init_vis_level().values()) + [100000]
+    delta = np.diff(v)
+    for i, d in enumerate(delta):
+        indices = np.where((vis > v[i]) & (vis <= v[i] + d))[0]
+        label[indices] = i
+    return label
+
+
+def read_pkl(path):
+    import pickle
     features = get_init_features()
     response = get_init_response()
     data = pickle.load(open(path, "rb"))
+    data = data[features + response].reset_index(drop=True)
+    return data
+
+
+def read_csv(path, sep=','):
+    import pandas as pd
+    features = get_init_features()
+    response = get_init_response()
+    data = pd.read_csv(path, sep=sep)
     data = data[features + response].reset_index(drop=True)
     return data
 

@@ -503,7 +503,15 @@ def main():
     from skynet import MY_DIR
     print(MY_DIR)
 
-    drawer = MSMDrawer(msm_files, params=['u-component of wind', 'v-component of wind'], forecast_time=[0])
+    drawer = MSMDrawer(msm_files,
+                       params=[
+                           'Total precipitation',
+                           'u-component of wind', 'v-component of wind',
+                           'Relative humidity',
+                           'Pressure reduced to MSL'
+                       ],
+                       forecast_time=[0]
+                       )
     drawer.run()
     plt.show()
 

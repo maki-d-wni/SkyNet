@@ -176,7 +176,7 @@ class NWPFrame(DataFrame):
     def merge_strcol(self, merged_columns, new_column, sep='', drop=False, inplace=False):
         from pandas.core.reshape.concat import concat
         objs = self[merged_columns].astype(str).values
-        merged = DataFrame([sep.join(list(obj)) for obj in objs], columns=[new_column])
+        merged = DataFrame([sep.join(list(obj)) for obj in objs], index=self.index, columns=[new_column])
 
         if drop:
             self.drop(merged_columns, axis=1, inplace=True)
@@ -191,7 +191,7 @@ class NWPFrame(DataFrame):
     def split_strcol(self, split_column, new_columns, pattern='', drop=False, inplace=False):
         from pandas.core.reshape.concat import concat
         objs = self[split_column].astype(str).values
-        split = DataFrame([re.split(pattern, obj) for obj in objs])
+        split = DataFrame([re.split(pattern, obj) for obj in objs], index=self.index)
 
         if len(new_columns) == split.shape[1]:
             split.columns = new_columns
@@ -233,10 +233,10 @@ class NWPFrame(DataFrame):
 
 
 def main():
-    from skynet.datasets.learning_data import read_learning_data
+    import skynet.datasets as skyds
 
     path = '/Users/makino/PycharmProjects/SkyCC/data/skynet/test_RJCC.pkl'
-    data = read_learning_data(path)
+    data = skyds.read_pkl(path)
 
     ndf = NWPFrame(data)
     ndf.calc_wind_speed(inplace=True)

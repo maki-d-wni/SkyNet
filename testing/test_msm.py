@@ -5,14 +5,18 @@ def main():
 
     import skynet.nwp2d as npd
 
-    msm_dir = '/Users/makino/PycharmProjects/SkyCC/data/grib2/MSM/surface/bt00/vt0015/20150101_000000.000'
+    layer = 'surface'
+
+    msm_dir = '/Users/makino/PycharmProjects/SkyCC/data/grib2/MSM/%s/bt00/vt0015/20150101_000000.000' % layer
     msm_files = glob.glob('%s/2015*' % msm_dir)
     msm_files.sort()
     print('ファイル一覧\n各ファイルに一つのparameter, level, validity timeが入っている')
     print(msm_files)
     print()
 
-    grbs = pygrib.open(msm_files[4])
+    msm_files = ['/Users/makino/PycharmProjects/SkyCC/data/tss_sky_ml/400220115/20180704_030000.grib2']
+
+    grbs = pygrib.open(msm_files[0])
     grb = grbs.select()[0]  # リストで返ってくる
     param = grb.parameterName
     level = grb.level
@@ -35,7 +39,7 @@ def main():
     # ここからポイントデータを取得
     icaos = npd.msm.get_jp_icaos()  # 日本の空港コード取得
     latlon_icao = npd.msm.get_airport_latlon(icaos)  # 空港の緯度、経度取得
-    idx_latlon = npd.msm.latlon_to_indices(latlon_icao, layer='surface')  # 取得した緯度、経度をindexに変換
+    idx_latlon = npd.msm.latlon_to_indices(latlon_icao, layer=layer)  # 取得した緯度、経度をindexに変換
 
     print('緯度、経度')
     print(latlon_icao)

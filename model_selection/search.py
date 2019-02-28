@@ -3,19 +3,6 @@ import copy
 from skynet.model_selection.validate import cross_validation
 
 
-def convert_visibility_rank(vis):
-    import numpy as np
-    from skynet.datasets import learning_data
-
-    label = np.zeros(len(vis))
-    v = list(learning_data.get_init_vis_level().values()) + [100000]
-    delta = np.diff(v)
-    for i, d in enumerate(delta):
-        indices = np.where((vis > v[i]) & (vis <= v[i] + d))[0]
-        label[indices] = i
-    return label
-
-
 def grid_search_cv(model, X, y, param_grid, cv=3, scoring="f1"):
     grids = __transform_param_grid(param_grid, 0, {}, [])
     best_score = 0
@@ -65,7 +52,7 @@ def main():
     from sklearn.ensemble import RandomForestClassifier
     from skynet import USER_DIR, DATA_DIR
     from skynet.nwp2d import NWPFrame
-    from skynet.datasets import learning_data
+    from skynet.datasets import base
     from skynet.datasets import convert
 
     params = [
@@ -95,7 +82,7 @@ def main():
         100
     ]
 
-    target = learning_data.get_init_response()
+    target = base.get_init_response()
 
     icao = 'RJAA'
     # 'RJSS',
@@ -151,8 +138,8 @@ def main():
     date = [d for d in X.index if not re.match('2017', d)]
     train = X.loc[date]
     '''
-    train = learning_data.read_learning_data('%s/skynet/train_%s.pkl' % (DATA_DIR, icao))
-    test = learning_data.read_learning_data('%s/skynet/test_%s.pkl' % (DATA_DIR, icao))
+    train = base.read_pkl('%s/skynet/train_%s.pkl' % (DATA_DIR, icao))
+    test = base.read_pkl('%s/skynet/test_%s.pkl' % (DATA_DIR, icao))
 
     # feature増やしてからデータ構造を（入力、正解）に戻す
 

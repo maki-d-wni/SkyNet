@@ -93,7 +93,7 @@ def smoothing(x, ksize, threshold=None):
     return x_sm
 
 
-def set_month_key(date, period=2):
+def get_month_key(date, period=2):
     keys = [
         (0, "month:1-2"),
         (1, "month:3-4"),
@@ -119,7 +119,7 @@ def adapt_visibility(v):
     import numpy as np
     import skynet.datasets as skyds
     v = copy.deepcopy(v)
-    vis_level = skyds.learning_data.get_init_vis_level()
+    vis_level = skyds.base.get_init_vis_level()
     diff = np.diff(list(vis_level.values()) + [9999])
     for key in vis_level:
         v[(v > key) & (v <= (key + 1))] = \
@@ -128,40 +128,59 @@ def adapt_visibility(v):
     return v
 
 
-def main():
-    import argparse
+def Vis_Pred(model, contxt, lclid, test_dir, input_dir, fit_dir, pred_dir, errfile):
+    import os
+    import sys
+    import copy
+    import csv
     import pickle
     import pandas as pd
     import skynet.nwp2d as npd
     import skynet.datasets as skyds
-    from skynet import MY_DIR, DATA_DIR
     from sklearn.preprocessing import StandardScaler
+    from pathlib import Path
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--icao")
-    parser.add_argument("--date")
-    parser.add_argument("--time")
+    myname = sys.argv[0]
 
-    args = parser.parse_args()
+    print(model)
 
-    icao = args.icao
-    date = args.date
-    time = args.time
+    csv_test = '%s/%s-%s.csv' % (test_dir, contxt, lclid)
+    csv_input = '%s/%s-%s.vis.csv' % (input_dir, contxt, lclid)
+    fitfile = '%s/%s-%s.vis.pkl' % (fit_dir, contxt, lclid)
+    predfile = '%s/%s-%s.vis.csv' % (pred_dir, contxt, lclid)
+    conffile = '%s/confidence_factor/%s-%s.vis.csv' % (pred_dir, contxt, lclid)
 
-    if args.icao is None:
-        icao = "RJAA"
+    if not os.path.exists(csv_test):
+        print("{:s}: [Error] {:s} is not found !".format(myname, csv_test))
 
-    if args.date is None:
-        date = "20180620"
+        if not os.path.exists(errfile):
+            Path(errfile).touch()
 
-    if args.time is None:
-        time = "060000"
+        return
 
-    X = pd.read_csv('/Users/makino/PycharmProjects/SkyCC/data/compass_ark/GLOBAL_METAR-%s.csv' % icao)
+    X = pd.read_csv(csv_test)
     X = npd.NWPFrame(X)
 
-    df_date = X[['HEAD:YEAR', 'MON', 'DAY', 'HOUR']]
+    # --- Reading Fitting File & Input File (If Not Existing -> -9999.)
+    if not os.path.exists(fitfile) or not os.path.exists(csv_input):
+        print("{:s}: [Checked] {:s} or {:s} is not found !".format(myname, fitfile, csv_input))
+        PRED = []
+        for k in range(len(X)):
+            pred = [-9999.]
+            PRED = PRED + pred
 
+        # - Output(all -9999.)
+        outdata = X[['HEAD:YEAR', 'MON', 'DAY', 'HOUR']]
+        outdata['SKYNET-VIS'] = PRED
+        outdata.to_csv(predfile, columns=['HEAD:YEAR', 'MON', 'DAY', 'HOUR', 'ARC-GUSTS'], index=False, header=True)
+
+        # - Output(num of train -> 0)
+        f = open(predfile, 'a')
+        csv.writer(f, lineterminator='\n').writerow(['FOOT:TRAIN_NUM', 0])
+        f.close()
+        return
+
+    df_date = X[['HEAD:YEAR', 'MON', 'DAY', 'HOUR']]
     date_keys = ['HEAD:YEAR', 'MON', 'DAY', 'HOUR', 'MIN']
     X['MIN'] = [0] * len(X)
     for key in date_keys:
@@ -172,42 +191,37 @@ def main():
     X.drop(date_keys, axis=1, inplace=True)
 
     # print(X)
-    wni_code = skyds.learning_data.get_init_features('wni')
+    wni_code = skyds.get_init_features('wni')
     X = X[wni_code]
 
-    long_code = skyds.learning_data.get_init_features('long')
+    long_code = skyds.get_init_features('long')
     X.columns = long_code
 
     vt = len(X)
 
-    pool = skyds.learning_data.read_learning_data('%s/skynet/train_%s.pkl' % (DATA_DIR, icao))[long_code]
-    sppool = skyds.convert.split_time_series(pool, date=pool["date"].values, level="month", period=2, index_date=True)
+    pool = skyds.read_csv(csv_input)[long_code]
+    sppool = skyds.convert.split_time_series(pool, date=pool["date"].values, level="month", period=2,
+                                             index_date=True)
 
-    month_key_info = set_month_key(X['date'][0], period=2)
+    month_key_info = get_month_key(X['date'][0], period=2)
     X = pd.concat([X, sppool[month_key_info[1]]])
 
     ss = StandardScaler()
     X = npd.NWPFrame(ss.fit_transform(X), columns=X.keys())
     X = X.iloc[:vt]
 
-    model_dir = '/Users/makino/PycharmProjects/SkyCC/trained_models'
-    clfs = [
-        pickle.load(
-            open("%s/%s/forest/%s/rf%03d.pkl" % (model_dir, icao, month_key_info[1], i), "rb"))
-        for i in range(N_CLF)
-    ]
+    clfs = pickle.load(open(fitfile, 'rb'))[month_key_info[1]]
 
-    p, c = predict(X, clfs, W[icao][month_key_info[0]], smooth=False, confidence=True)
+    p, c = predict(X, clfs, W[lclid][month_key_info[0]], smooth=False, confidence=True)
 
-    # vis = pd.read_csv("%s/live/input/%s.csv" % (MY_DIR, icao))[["date"]]
     vis_pred = adapt_visibility(p)
-    vis = npd.NWPFrame(df_date)
-    vis = pd.concat([vis, c], axis=1)
-    vis['SkyNet'] = vis_pred
-    vis.to_csv("%s/live/prediction/SkyNet_%s.vis.csv" % (MY_DIR, icao), index=False)
+    vis = npd.NWPFrame(copy.deepcopy(df_date))
+    vis['SKYNET-VIS'] = vis_pred
+    # vis.rename(columns={'HEAD:YEAR': 'YEAR'}, inplace=True)
+    c = pd.concat([copy.deepcopy(df_date), c], axis=1)
+    # c.rename(columns={'HEAD:YEAR': 'YEAR'}, inplace=True)
 
-    print(vis)
+    print(os.path.dirname(predfile))
 
-
-if __name__ == "__main__":
-    main()
+    vis.to_csv(predfile, index=False)
+    c.to_csv(conffile, index=False)

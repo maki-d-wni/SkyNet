@@ -26,11 +26,14 @@ def split_blocks(X, y, n_folds=3):
     return spX, spy
 
 
-def split_binary(data, key):
-    label = data[key]
-    threshold = int(len(np.unique(label)) / 2)
-    x1 = data[label <= threshold]
-    x0 = data[label > threshold]
+def split_binary(X, y, threshold=None):
+    if threshold is None:
+        ma = y.max()
+        mi = y.min()
+        threshold = int((ma - mi) / 2)
+
+    x1 = X[y <= threshold]
+    x0 = X[y > threshold]
 
     x1.insert(loc=len(x1.keys()), column="binary", value=np.ones(len(x1)))
     x0.insert(loc=len(x0.keys()), column="binary", value=np.zeros(len(x0)))
@@ -38,9 +41,9 @@ def split_binary(data, key):
     return x1, x0
 
 
-def split_time_series(data, date, level="month", period=2, index_date=False):
+def split_time_series(X, date, level="month", period=2, index_date=False):
     date = date.astype(int).astype(str)
-    data.index = date
+    X.index = date
     spd = {}
     if level == "year":
         # i = 0
@@ -54,14 +57,14 @@ def split_time_series(data, date, level="month", period=2, index_date=False):
                 key = "month:%d-%d" % (idx, 12)
                 ms = ["{0:02d}".format(m) for m in range(idx, 13)]
                 ext_date = [d for d in date if d[i:e] in ms]
-                spd[key] = data.loc[ext_date].reset_index(drop=True)
+                spd[key] = X.loc[ext_date].reset_index(drop=True)
                 if index_date:
                     spd[key].index = __strtime_to_datetime(ext_date)
             else:
                 key = "month:%d-%d" % (idx, idx + period - 1)
                 ms = ["{0:02d}".format(m) for m in range(idx, idx + period)]
                 ext_date = [d for d in date if d[i:e] in ms]
-                spd[key] = data.loc[ext_date].reset_index(drop=True)
+                spd[key] = X.loc[ext_date].reset_index(drop=True)
                 if index_date:
                     spd[key].index = __strtime_to_datetime(ext_date)
     elif level == "day":
@@ -150,7 +153,7 @@ def main():
 
     X = pd.concat([msm_data, metar_data], axis=1)
 
-    print(X)
+    x0, x1 = split_binary(X, X['visibility'])
 
 
 if __name__ == '__main__':

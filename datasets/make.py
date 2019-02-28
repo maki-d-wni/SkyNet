@@ -106,18 +106,60 @@ def msm_airport_ft0(icaos):
     pickle.dump(df_airports, open('/Users/makino/PycharmProjects/SkyCC/data/all_airport.pkl', 'wb'))
 
 
-def msm_airport_xy():
-    pass
+def msm_airport_xy(icao, metar_dir, msm_dir, save_dir):
+    import re
+    import pandas as pd
+    import skynet.nwp2d as npd
+    import skynet.datasets as skyds
+
+    # metar読み込み
+    with open('%s/head.txt' % metar_dir, 'r') as f:
+        header = f.read()
+    header = header.split(sep=',')
+
+    data15 = pd.read_csv('%s/2015/%s.txt' % (metar_dir, icao), sep=',')
+    data16 = pd.read_csv('%s/2016/%s.txt' % (metar_dir, icao), sep=',')
+    data17 = pd.read_csv('%s/2017/%s.txt' % (metar_dir, icao), sep=',', names=header)
+
+    metar_data = pd.concat([data15, data16, data17])
+    metar_data = npd.NWPFrame(metar_data)
+
+    metar_data.strtime_to_datetime('date', '%Y%m%d%H%M%S', inplace=True)
+    metar_data.datetime_to_strtime('date', '%Y-%m-%d %H:%M', inplace=True)
+    metar_data.drop_duplicates('date', inplace=True)
+    metar_data.index = metar_data['date'].values
+
+    metar_keys = ['date', 'visibility', 'str_cloud']
+    metar_data = metar_data[metar_keys]
+    metar_data['visibility_rank'] = skyds.to_visrank(metar_data['visibility'])
+
+    # MSM読み込み
+    msm_data = pd.read_csv('%s/%s.csv' % (msm_dir, icao))
+
+    msm_data.rename(columns={'Unnamed: 0': 'date'}, inplace=True)
+    msm_data.index = msm_data['date'].values
+    msm_data.sort_index(inplace=True)
+
+    fets = skyds.get_init_features()
+    res = skyds.get_init_response()
+    X = npd.NWPFrame(pd.concat([msm_data[fets], metar_data[res]], axis=1))
+    X.dropna(inplace=True)
+    X.strtime_to_datetime('date', '%Y-%m-%d %H:%M', inplace=True)
+    X.datetime_to_strtime('date', '%Y%m%d%H%M', inplace=True)
+    X = X[fets + res]
+
+    date = [d for d in X.index if not re.match('2017', d)]
+    train = npd.NWPFrame(X.loc[date])
+    train['date'] = train.index
+    df_date = train.split_strcol(
+        'date', ['year', 'month', 'day', 'hour', 'min'], pattern=r'[-\s:]'
+    )[['month', 'day', 'hour', 'min']]
+    train = pd.concat([df_date, train], axis=1)
+    train.drop('date', axis=1, inplace=True)
+    train.to_csv('%s/%s.csv' % (save_dir, icao), index=False)
 
 
 def main():
-    import re
-    import gc
-    import glob
-    import pickle
-    import pygrib
-    import pandas as pd
-    import skynet.nwp2d as npd
     from skynet import DATA_DIR
 
     # jp_icaos = msm.get_jp_icaos()
@@ -144,48 +186,14 @@ def main():
         'RJOO',
     ]
 
-    msm_airport_ft0(jp_icaos)
+    # msm_airport_ft0(jp_icaos)
 
-    icao = 'RJOT'
+    icao = 'RJAA'
+    metar_dir = '%s/metar/airport' % DATA_DIR
+    msm_dir = '%s/MSM/airport' % DATA_DIR
+    save_dir = '%s/MSM/airport.process' % DATA_DIR
 
-    # metar読み込み
-    metar_path = '%s/text/metar' % DATA_DIR
-    with open('%s/head.txt' % metar_path, 'r') as f:
-        header = f.read()
-    header = header.split(sep=',')
-
-    data15 = pd.read_csv('%s/2015/%s.txt' % (metar_path, icao), sep=',')
-    data16 = pd.read_csv('%s/2016/%s.txt' % (metar_path, icao), sep=',')
-    data17 = pd.read_csv('%s/2017/%s.txt' % (metar_path, icao), sep=',', names=header)
-
-    metar_data = pd.concat([data15, data16, data17])
-    metar_data = npd.NWPFrame(metar_data)
-
-    metar_data.drop_duplicates('date', inplace=True)
-    metar_data.strtime_to_datetime('date', '%Y%m%d%H%M%S', inplace=True)
-    date = metar_data.datetime_to_strtime('date', '%Y-%m-%d %H:%M')
-    metar_data.datetime_to_strtime('date', '%Y%m%d%H%M', inplace=True)
-    metar_data.index = date
-
-    metar_keys = ['date', 'visibility']
-    metar = metar_data[metar_keys]
-    vr = pd.DataFrame(convert_visibility_rank(metar['visibility']), index=metar.index, columns=['visibility_rank'])
-    metar = pd.concat([metar, vr], axis=1)
-    '''
-
-    # MSM読み込み
-    '''
-    msm_data = npd.NWPFrame(pd.read_csv('%s/msm_airport/%s.csv' % (DATA_DIR, icao)))
-
-    msm_data.rename(columns={'Unnamed: 0': 'date'}, inplace=True)
-    msm_data.index = msm_data['date'].values
-    msm_data.strtime_to_datetime('date', '%Y-%m-%d %H:%M', inplace=True)
-    msm_data.datetime_to_strtime('date', '%Y%m%d%H%M', inplace=True)
-    msm_data.sort_index(inplace=True)
-
-    fets = learning_data.get_init_features()
-    X = NWPFrame(msm_data[fets])
-    X.dropna(inplace=True)
+    msm_airport_xy(icao, metar_dir, msm_dir, save_dir)
 
 
 if __name__ == '__main__':

@@ -1,11 +1,8 @@
 import datetime
 import pandas as pd
-import skynet.data_handling as dh
+import skynet.nwp2d as npd
 
 from sklearn.preprocessing import StandardScaler
-from skynet.data_handling import msm
-from skynet.data_handling import area_forecast as af
-from skynet.data_handling.preprocessing import PreProcessor
 
 
 def make_datetable(date):
