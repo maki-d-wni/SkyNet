@@ -141,19 +141,19 @@ def msm_airport_xy(icao, metar_dir, msm_dir, save_dir):
     msm_data.sort_index(inplace=True)
 
     fets = skyds.get_init_features()
-    res = skyds.get_init_response()
-    X = npd.NWPFrame(pd.concat([msm_data[fets], metar_data[res]], axis=1))
+    target = skyds.get_init_target()
+    X = npd.NWPFrame(pd.concat([msm_data[fets], metar_data[target]], axis=1))
     X.dropna(inplace=True)
     X.strtime_to_datetime('date', '%Y-%m-%d %H:%M', inplace=True)
     X.datetime_to_strtime('date', '%Y%m%d%H%M', inplace=True)
-    X = X[fets + res]
+    X = X[fets + target]
 
     date = [d for d in X.index if not re.match('2017', d)]
     train = npd.NWPFrame(X.loc[date])
     train['date'] = train.index
     df_date = train.split_strcol(
         'date', ['year', 'month', 'day', 'hour', 'min'], pattern=r'[-\s:]'
-    )[['month', 'day', 'hour', 'min']]
+    )[['year', 'month', 'day', 'hour', 'min']]
     train = pd.concat([df_date, train], axis=1)
     train.drop('date', axis=1, inplace=True)
     train.to_csv('%s/%s.csv' % (save_dir, icao), index=False)
@@ -188,7 +188,7 @@ def main():
 
     # msm_airport_ft0(jp_icaos)
 
-    icao = 'RJAA'
+    icao = 'RJBB'
     metar_dir = '%s/metar/airport' % DATA_DIR
     msm_dir = '%s/MSM/airport' % DATA_DIR
     save_dir = '%s/MSM/airport.process' % DATA_DIR
