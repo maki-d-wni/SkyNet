@@ -1,1 +1,4 @@
-from sklearn.svm import *
+try:
+    from sklearn.svm import *
+except ImportError:
+    raise

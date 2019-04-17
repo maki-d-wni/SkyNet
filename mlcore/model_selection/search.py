@@ -1,7 +1,5 @@
 import copy
 
-from skynet.mlcore.model_selection import cross_validation
-
 
 def grid_search_cv(model, X, y, param_grid, cv=3, scoring="f1"):
     grids = __transform_param_grid(param_grid, 0, {}, [])
@@ -45,11 +43,11 @@ def main():
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
+    import skynet.datasets as skyds
     from sklearn.preprocessing import StandardScaler
     from sklearn.metrics import recall_score
     from sklearn.ensemble import RandomForestClassifier
     from skynet import USER_DIR, DATA_DIR
-    from skynet.datasets import base
     from skynet.datasets import convert
 
     params = [
@@ -79,9 +77,9 @@ def main():
         100
     ]
 
-    target = base.get_init_response()
+    target = skyds.get_init_target()
 
-    icao = 'RJAA'
+    icao = 'RJFK'
     # 'RJSS',
     # 'RJTT',
     # 'ROAH',
@@ -93,6 +91,7 @@ def main():
     # 'RJGG',
     # 'RJNK',
     # 'RJOA',
+    # 'RJOT',
 
     '''
     # metar読み込み
@@ -135,13 +134,15 @@ def main():
     date = [d for d in X.index if not re.match('2017', d)]
     train = X.loc[date]
     '''
-    train = base.read_pkl('%s/skynet/train_%s.pkl' % (DATA_DIR, icao))
-    test = base.read_pkl('%s/skynet/test_%s.pkl' % (DATA_DIR, icao))
+
+    data_dir = '%s/ARC-common/fit_input/JMA_MSM/vis' % DATA_DIR
+    data_name = 'GLOBAL_METAR-%s.vis' % icao
+    train = skyds.read_csv('%s/%s.csv' % (data_dir, data_name))
+    test = skyds.read_csv('%s/skynet/test_%s.csv' % (DATA_DIR, icao))
 
     # feature増やしてからデータ構造を（入力、正解）に戻す
 
-    fets = [f for f in train.keys() if not (f in target)]
-    print(fets)
+    fets = skyds.get_init_features()
 
     # 時系列でデータを分割
     sptrain = convert.split_time_series(train, train['date'], level="month", period=2)

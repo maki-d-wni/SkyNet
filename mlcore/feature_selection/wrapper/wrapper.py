@@ -2,17 +2,15 @@ import copy
 import numpy as np
 import pandas as pd
 
+import skynet.datasets as skyds
+from skynet.mlcore.svm import SVC
+
 from sklearn import clone
 from sklearn.metrics import f1_score
 
-from skynet import DATA_PATH
-from skynet.data_handling import read_learning_data
-from skynet.data_handling import balanced
-from skynet.mlcore.svm import SkySVM
-
 
 class WrapperSelector(object):
-    def __init__(self, classifier=SkySVM(), nof=10, param_grid=None, **kwargs):
+    def __init__(self, classifier=SVC(), nof=10, param_grid=None, **kwargs):
         self.classifier = classifier
         self.nof = nof
 
@@ -158,7 +156,7 @@ class WrapperSelector(object):
         for i in range(self.cv):
             X_train = pd.concat([spX[n] for n in spX if n != i])
             y_train = pd.concat([spy[n] for n in spy if n != i])
-            X_train, y_train = balanced(X_train, y_train)
+            X_train, y_train = skyds.convert.balanced(X_train, y_train)
             X_train = X_train.values
             y_train = y_train.values[:, 0]
 
@@ -198,9 +196,11 @@ class WrapperSelector(object):
 
 
 def main():
+    from skynet import DATA_DIR
+
     icao = "RJFK"
 
-    train = read_learning_data(DATA_PATH + "/skynet/train_%s.pkl" % icao)
+    train = skyds.read_pkl(DATA_DIR + "/skynet/train_%s.pkl" % icao)
 
     clf = WrapperSelector(classifier=SkySVM(), nof=2,
                           param_grid={

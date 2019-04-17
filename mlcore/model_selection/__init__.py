@@ -1,1 +1,4 @@
-from sklearn.model_selection import *
+try:
+    from sklearn.model_selection import *
+except ImportError:
+    raise

@@ -1,4 +1,4 @@
-def main():
+def stacking(start_month, end_month):
     import pickle
     import matplotlib.pyplot as plt
     import pandas as pd
@@ -25,21 +25,14 @@ def main():
     X = data.iloc[:, :-1]
     y = data.iloc[:, -1]
 
-    X = X[(X['month'] == 1) | (X['month'] == 2)]
+    X = X[(X['month'] == start_month) | (X['month'] == end_month)]
     y = y.loc[X.index]
 
     ss = StandardScaler()
     X = ss.fit_transform(X)
     y = y.values
 
-    plt.figure()
-    plt.hist(y)
-
     X, y = skyds.convert.balanced(X, y)
-
-    plt.figure()
-    plt.hist(y)
-    # plt.show()
 
     # 第一層のクラシファイア
     clf_children = [
@@ -53,7 +46,7 @@ def main():
     ]
 
     clf_children3 = [
-        GaussianNB() for _ in range(10)
+        GaussianNB() for _ in range(100)
     ]
 
     clf_children4 = [
@@ -71,7 +64,7 @@ def main():
 
     clf_stack = StackingClassifier(
         classifiers=clf_children3,
-        meta_classifier=clf_meta,
+        meta_classifier=clf_meta3,
         use_probas=True
     )
 
@@ -82,31 +75,9 @@ def main():
         'Stacking'
     ]
 
-    # -- テストデータの準備
-    test = pickle.load(open('/Users/makino/PycharmProjects/SkyCC/data/skynet/test_%s.pkl' % icao, 'rb'))
-    test['date'] = test['date'].astype(int).astype(str)
-    test = npd.NWPFrame(test)
-    test.strtime_to_datetime('date', '%Y%m%d%H%M', inplace=True)
-    test.datetime_to_strtime('date', '%Y-%m-%d %H:%M', inplace=True)
-    df_date = test.split_strcol(
-        'date', ['year', 'month', 'day', 'hour', 'min'], r'[-\s:]'
-    )[['month', 'day', 'hour', 'min']].astype(int)
-    test = pd.concat([df_date, test], axis=1)
-    keys = skyds.get_init_features() + skyds.get_init_target()
-    test = test[keys]
-
-    X_test = test.iloc[:, :-1]
-    y_test = test.iloc[:, -1]
-
-    X_test = X_test[(X_test['month'] == 1) | (X_test['month'] == 2)]
-    y_test = y_test.loc[X_test.index]
-
-    ss = StandardScaler()
-    X_test = ss.fit_transform(X_test)
-    y_test = y_test.values
 
     # 実験
-    for clf, model_name in zip(clf_children + [clf_stack], model_names):
+    for clf, model_name in zip(clf_children[-1:] + [clf_stack], model_names[-2:]):
         scores = cross_val_score(clf, X, y, cv=3, scoring='accuracy')
         print("Validation Accuracy: %0.2f (+/- %0.2f) [%s]" % (scores.mean(), scores.std(), model_name))
 
@@ -114,7 +85,7 @@ def main():
         y_pred = clf.predict(X_test)
 
         # print('probability')
-        # print(clf.predict_proba(X_test))
+        c = clf.predict_proba(X_test)
 
         acc = accuracy_score(y_test, y_pred)
         print('Test Accuracy: %0.2f [%s]' % (acc, model_name))
@@ -124,6 +95,12 @@ def main():
         plt.title(model_name)
         plt.plot(y_test)
         plt.plot(y_pred)
+
+
+def main():
+    import matplotlib.pyplot as plt
+    for s, e in zip(range(1, 12, 2), range(2, 13, 2)):
+        stacking(s, e)
     plt.show()
 
 

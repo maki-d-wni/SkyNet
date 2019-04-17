@@ -4,7 +4,6 @@ def get_init_features(code='long'):
         'month',
         'day',
         'hour',
-        'min',
         'Pressure reduced to MSL',
         'Pressure',
         'u-component of wind',
@@ -166,22 +165,12 @@ def to_visrank(vis):
 
 def read_pkl(path):
     import pickle
-    fs = get_init_features()
-    target = get_init_target()
-    data = pickle.load(open(path, "rb"))
-    fs = [f for f in fs if f in data.keys()]
-    data = data[fs + target].reset_index(drop=True)
-    return data
+    return pickle.load(open(path, "rb"))
 
 
 def read_csv(path, sep=','):
     import pandas as pd
-    fs = get_init_features()
-    target = get_init_target()
-    data = pd.read_csv(path, sep=sep)
-    fs = [f for f in fs if f in data.keys()]
-    data = data[fs + target].reset_index(drop=True)
-    return data
+    return pd.read_csv(path, sep=sep)
 
 
 def main():

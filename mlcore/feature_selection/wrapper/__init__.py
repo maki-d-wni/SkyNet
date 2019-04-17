@@ -1,1 +1,2 @@
-from skynet.feature_selection.wrapper.wrapper import WrapperSelector
+from skynet.mlcore.feature_selection.wrapper.wrapper import *
+

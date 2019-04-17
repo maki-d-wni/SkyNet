@@ -1,5 +1,4 @@
 import datetime
-
 import numpy as np
 import pandas as pd
 
@@ -41,53 +40,46 @@ def split_binary(X, y, threshold=None):
     return x1, x0
 
 
-def split_time_series(X, date, level="month", period=2, index_date=False):
-    date = date.astype(int).astype(str)
-    X.index = date
+def split_time_series(X, date, date_fmt='%Y-%m-%d %H:%M', level="month", period=2):
+    xtype = type(X)
+    if xtype == np.ndarray:
+        if X.ndim == 1:
+            X = pd.Series(X)
+        else:
+            X = pd.DataFrame(X)
+
+    try:
+        date = date.astype(int)
+    except ValueError:
+        pass
+    try:
+        date = date.astype(str)
+    except ValueError:
+        pass
+
     spd = {}
     if level == "year":
-        # i = 0
-        # e = 4
         raise NotImplementedError
     elif level == "month":
-        i = 4
-        e = 6
+        date = np.array([datetime.datetime.strptime(d, date_fmt).month for d in date])
         for idx in range(1, 13, period):
             if idx + period > 12:
                 key = "month:%d-%d" % (idx, 12)
-                ms = ["{0:02d}".format(m) for m in range(idx, 13)]
-                ext_date = [d for d in date if d[i:e] in ms]
-                spd[key] = X.loc[ext_date].reset_index(drop=True)
-                if index_date:
-                    spd[key].index = __strtime_to_datetime(ext_date)
+                ms = [m for m in range(idx, 13)]
+                spd[key] = X.iloc[(date == ms[0]) | (date == ms[1])].reset_index(drop=True)
             else:
                 key = "month:%d-%d" % (idx, idx + period - 1)
-                ms = ["{0:02d}".format(m) for m in range(idx, idx + period)]
-                ext_date = [d for d in date if d[i:e] in ms]
-                spd[key] = X.loc[ext_date].reset_index(drop=True)
-                if index_date:
-                    spd[key].index = __strtime_to_datetime(ext_date)
+                ms = [m for m in range(idx, idx + period)]
+                spd[key] = X.iloc[(date == ms[0]) | (date == ms[1])].reset_index(drop=True)
     elif level == "day":
-        # i = 6
-        # e = 8
         raise NotImplementedError
     else:
-        # i = 0
-        # e = 8
         raise NotImplementedError
 
-    return spd
-
-
-def __strtime_to_datetime(date):
-    date = np.array(date).astype(int).astype(str)
-    date = [datetime.datetime.strptime(d, "%Y%m%d%H%M") for d in date]
-    return date
-
-
-def __datetime_to_strtime(date):
-    date = [d.strftime("%Y%m%d%H%M") for d in date]
-    return date
+    if xtype == np.ndarray:
+        return {key: spd[key].values for key in spd}
+    else:
+        return spd
 
 
 def balanced(X, y):
@@ -115,6 +107,15 @@ def balanced(X, y):
         y = y[shuffled]
 
     return X, y
+
+
+def __type_check(obj):
+    if type(obj) == pd.DataFrame:
+        return obj.vlaues
+    elif type(obj) == np.ndarray:
+        return obj
+    else:
+        return
 
 
 def main():
@@ -154,6 +155,9 @@ def main():
     X = pd.concat([msm_data, metar_data], axis=1)
 
     x0, x1 = split_binary(X, X['visibility'])
+    print(x0)
+    print()
+    print(x1)
 
 
 if __name__ == '__main__':

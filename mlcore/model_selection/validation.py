@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn import clone
 
 
-def cross_validation(model, X, y, cv=3, scoring="f1"):
+def custom_cross_validate(estimator, X, y, groups=None, scoring="f1", cv=None):
     from skynet.datasets import convert
     from skynet.evaluate import SCORES
     idx = {int(l): np.where(y.values[:, 0] == l)[0] for l in np.unique(y.values[:, 0])}
@@ -35,9 +35,9 @@ def cross_validation(model, X, y, cv=3, scoring="f1"):
         X_test = X_test.values
         y_test = y_test.values[:, 0]
 
-        model = clone(model)
-        model.fit(X_train, y_train)
-        p = model.predict(X_test)
+        estimator = clone(estimator)
+        estimator.fit(X_train, y_train)
+        p = estimator.predict(X_test)
 
         y_test = np.where(y_test > 1, 0, 1)
         p = np.where(p > 1, 0, 1)

@@ -1,15 +1,11 @@
-from skynet.feature_selection.filter import pearson_correlation
-from skynet.feature_selection.filter import relief
-from skynet.feature_selection.wrapper import WrapperSelector
-from skynet.mlcore.svm import SkySVM
-from skynet.mlcore.ensemble import SkyGradientBoosting
-from skynet.mlcore.ensemble import SkyXGBoosting
-from skynet.mlcore.ensemble import SkyRandomForest
-from skynet.mlcore.neural_network import SkyMLP
+from skynet.mlcore.feature_selection.filter import pearson_correlation
+from skynet.mlcore.feature_selection.filter import relief
+from skynet.mlcore.feature_selection.wrapper import WrapperSelector
+from skynet.mlcore.svm import SVC
 
 
 class FilterWrapperSelector(WrapperSelector):
-    def __init__(self, classifier=SkySVM(), nof=10, param_grid=None,
+    def __init__(self, classifier=SVC(), nof=10, param_grid=None,
                  filter_method="corr", depth=2):
         if filter_method == "corr":
             filter_method = pearson_correlation
@@ -27,12 +23,10 @@ class FilterWrapperSelector(WrapperSelector):
 def main():
     import os
     import pandas as pd
+    from skynet import DATA_DIR
     from sklearn.preprocessing import StandardScaler
-    from skynet import SKYNET_PATH, DATA_PATH
-    from skynet.data_handling import read_learning_data
-    from skynet.data_handling.preprocessing import PreProcessor
-    from skynet.data_handling import get_init_response
-    from skynet.data_handling import split_time_series
+    from skynet.mlcore.ensemble import GradientBoostingClassifier
+    from skynet.mlcore.ensemble import RandomForestClassifier
 
     icao = "RJFK"
 

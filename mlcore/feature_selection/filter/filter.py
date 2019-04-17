@@ -1,7 +1,19 @@
 import numpy as np
 import pandas as pd
 
-from skynet.data_handling import get_init_vis_level
+
+def pearson_correlation(X, y, depth=None):
+    fets = np.array(X.keys())
+    Xy = pd.concat([X, y], axis=1)
+    corr = np.absolute(np.corrcoef(Xy.T)[-1, :-1])
+
+    idx = np.argsort(corr)[::-1]
+    if depth is None:
+        fets = list(fets[idx])
+    else:
+        fets = fets[idx][:depth]
+
+    return np.array(fets)
 
 
 def relief(X, y, depth=None):

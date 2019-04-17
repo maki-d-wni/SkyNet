@@ -1,4 +1,4 @@
-def main():
+def test1():
     import glob
     import pygrib
     import matplotlib.pyplot as plt
@@ -17,7 +17,7 @@ def main():
     msm_files = ['/Users/makino/PycharmProjects/SkyCC/data/tss_sky_ml/400220115/20180704_030000.grib2']
 
     grbs = pygrib.open(msm_files[0])
-    grb = grbs.select()[0]  # リストで返ってくる
+    grb = grbs.select()[4]  # リストで返ってくる
     param = grb.parameterName
     level = grb.level
     vt = grb.forecastTime
@@ -61,6 +61,10 @@ def main():
         plt.scatter(idx_latlon[icao][1], idx_latlon[icao][0], c='r', s=8)
         plt.text(idx_latlon[icao][1] + 5, idx_latlon[icao][0] - 5, '%s' % icao)
     plt.show()
+
+
+def main():
+    test1()
 
 
 if __name__ == '__main__':
