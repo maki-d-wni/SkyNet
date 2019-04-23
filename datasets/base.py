@@ -1,7 +1,9 @@
 def get_init_features(code='long'):
     from skynet import MSM_INFO
     fs = [
-        'date',
+        'month',
+        'day',
+        'hour',
         'Pressure reduced to MSL',
         'Pressure',
         'u-component of wind',
@@ -135,7 +137,7 @@ def get_init_features(code='long'):
         return fs
 
 
-def get_init_response():
+def get_init_target():
     r = [
         "visibility_rank"
     ]
@@ -163,20 +165,12 @@ def to_visrank(vis):
 
 def read_pkl(path):
     import pickle
-    features = get_init_features()
-    response = get_init_response()
-    data = pickle.load(open(path, "rb"))
-    data = data[features + response].reset_index(drop=True)
-    return data
+    return pickle.load(open(path, "rb"))
 
 
 def read_csv(path, sep=','):
     import pandas as pd
-    features = get_init_features()
-    response = get_init_response()
-    data = pd.read_csv(path, sep=sep)
-    data = data[features + response].reset_index(drop=True)
-    return data
+    return pd.read_csv(path, sep=sep)
 
 
 def main():

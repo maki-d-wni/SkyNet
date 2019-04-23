@@ -1,3 +1,7 @@
+try:
+    from pandas import *
+except ImportError:
+    raise
 from skynet.nwp2d.base import NWPFrame
 from skynet.nwp2d.msm import msm
 # from skynet.nwp2d.own import own
