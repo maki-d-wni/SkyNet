@@ -8,6 +8,7 @@ from sklearn.metrics import recall_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.svm import SVC
 
 
 def fit_n_models(clf, n_clfs, X_train, y_train, X_test, y_test, save_dir):
@@ -21,12 +22,8 @@ def fit_n_models(clf, n_clfs, X_train, y_train, X_test, y_test, save_dir):
             if clf == 'stacking':
                 # 第一層のクラシファイア
                 clf_children = [
-                                   GaussianNB() for _ in range(4)
-                               ] + [
-                                   RandomForestClassifier() for _ in range(4)
-                               ] + [
-                                   GradientBoostingClassifier() for _ in range(4)
-                               ]
+                    GaussianNB() for _ in range(16)
+                ]
 
                 # メタクラシファイア
                 clf_meta = LogisticRegression()
@@ -41,6 +38,8 @@ def fit_n_models(clf, n_clfs, X_train, y_train, X_test, y_test, save_dir):
                 clf = RandomForestClassifier()
             elif clf == 'boosting':
                 clf = GradientBoostingClassifier()
+            elif clf == 'svm':
+                clf = SVC()
 
             clf.fit(X_train.values, y_train.values[:, 0])
             p = clf.predict(X_test.values)
@@ -84,12 +83,12 @@ def main():
     from skynet.datasets import convert
 
     n_clfs = [
-        10,
-        10,
-        10,
-        10,
-        10,
-        10
+        20,
+        20,
+        20,
+        20,
+        20,
+        20
     ]
 
     target = skyds.get_init_target()
