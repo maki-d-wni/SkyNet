@@ -1,6 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap
+
+try:
+    from mpl_toolkits.basemap import Basemap
+except KeyError:
+    import os
+    import conda
+
+    conda_file_dir = conda.__file__
+    conda_dir = conda_file_dir.split('lib')[0]
+    proj_lib = os.path.join(os.path.join(conda_dir, 'share'), 'proj')
+    os.environ['PROJ_LIB'] = proj_lib
+
+    from mpl_toolkits.basemap import Basemap
+
 from skynet import MSM_BBOX, MSM_SHAPE
 
 
@@ -108,7 +121,7 @@ class DrawerBase(object):
 
 
 class MSMDrawer(DrawerBase):
-    def __init__(self, msm_files, params=None, levels=None, forecast_time=None):
+    def __init__(self, msm_files=None, params=None, levels=None, forecast_time=None):
         super().__init__()
         self.lat1 = MSM_BBOX[1]
         self.lat2 = MSM_BBOX[3]
@@ -119,7 +132,8 @@ class MSMDrawer(DrawerBase):
         self.levels = levels
         self.forecast_time = forecast_time
 
-        self.__grbs_list = read_grib(msm_files, params=params, levels=levels, forecast_time=forecast_time)
+        if msm_files is not None:
+            self.__grbs_list = read_grib(msm_files, params=params, levels=levels, forecast_time=forecast_time)
 
     def run(self):
         us = {}

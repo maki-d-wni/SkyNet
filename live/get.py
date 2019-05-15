@@ -125,7 +125,11 @@ def _d2h2m2z_to_y4m2d2h2d2(date):
 
 
 def get_metar_point(url):
+<<<<<<< HEAD
     # os.environ['http_proxy'] = 'http://maki-d:onigiri0802@172.16.250.1:8080'
+=======
+    os.environ['http_proxy'] = 'http://maki-d:onigiri0802@172.16.250.1:8080'
+>>>>>>> origin/dev2
     url_info = requests.get(url)
     html = url_info.content
 
@@ -140,7 +144,11 @@ def get_metar_point(url):
     for t in tbl:
         t = t.replace('\n', ' ')
         print(t)
+<<<<<<< HEAD
         metar = _html_to_dataframe(pattern=r'R.*', string=t)
+=======
+        metar = _html_to_dataframe(pattern=r'RJ.*', string=t)
+>>>>>>> origin/dev2
         if metar is not None:
             df = pd.concat([df, metar])
     df.reset_index(drop=True, inplace=True)
@@ -148,7 +156,11 @@ def get_metar_point(url):
 
 
 def main():
+<<<<<<< HEAD
     from skynet import USER_DIR
+=======
+    from skynet import DATA_DIR
+>>>>>>> origin/dev2
 
     today = datetime.datetime.today()
 
@@ -156,6 +168,7 @@ def main():
     month = today.month
     day = today.day
     bt = 0
+<<<<<<< HEAD
     icaos = ['RJAA',
              'RJAF',
              'RJAH',
@@ -258,6 +271,51 @@ def main():
         metar.index = metar['date']
         metar.sort_index(inplace=True)
         metar.to_csv('%s/%s.csv' % (metar_dir, icao), index=False)
+=======
+    icao = 'RJAA'
+    data_name = 'GLOBAL_METAR-%s.vis' % icao
+
+    url_pred = 'http://pt-compass-arc.wni.co.jp/compass/data/ARC-pred/pred_output/JMA_MSM/' \
+               '%04d/%02d/%02d/%02d/vis/%s.csv' % (year, month, day, bt, data_name)
+
+    save_dir = '/home/maki-d/PycharmProjects/SkyCC/data/ARC-pred/pred_output/JMA_MSM/' \
+               '%04d/%02d/%02d/%02d/vis/' % (year, month, day, bt)
+
+    get_predict_data(url_pred, save_dir)
+
+    '''
+    url_metar = 'http://imaging1.wni.co.jp/SKY/view_metaf.cgi?sty=&fcst=&mode=METAR&area=13'
+    dict_metar = get_metar_area(url_metar)
+
+    url_metar2 = 'http://imaging1.wni.co.jp/SKY/view_metaf.cgi?sty=&fcst=&mode=METAR&area=14'
+    dict_metar.update(get_metar_area(url_metar2))
+
+    url_metar3 = 'http://imaging1.wni.co.jp/SKY/view_metaf.cgi?sty=&fcst=&mode=METAR&area=15'
+    dict_metar.update(get_metar_area(url_metar3))
+
+    url_metar4 = 'http://imaging1.wni.co.jp/SKY/view_metaf.cgi?sty=&fcst=&mode=METAR&area=16'
+    dict_metar.update(get_metar_area(url_metar4))
+    '''
+
+    url_metar = 'http://imaging1.wni.co.jp/SKY/view_metaf.cgi?mode=SEQ&sty=1&point=%s&head=on&fcst=' % icao
+    metar_latest = get_metar_point(url_metar)
+    date = _d2h2m2z_to_y4m2d2h2d2(metar_latest['date'])
+    metar_latest.loc[:, 'date'] = date
+
+    metar_path = '/home/maki-d/PycharmProjects/SkyCC/data/evaluate/metar'
+    exist_metar = False
+    if exist_metar:
+        metar = pd.read_csv('%s/%s.csv' % (metar_path, icao))
+    else:
+        metar = pd.DataFrame()
+
+    metar = pd.concat([metar, metar_latest])
+
+    metar.index = date
+    metar.sort_index(inplace=True)
+
+    metar.to_csv('%s/%s.csv' % (metar_path, icao), index=False)
+>>>>>>> origin/dev2
 
 
 if __name__ == '__main__':
