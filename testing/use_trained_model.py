@@ -5,9 +5,9 @@ def main():
     from skynet import DATA_DIR
     from sklearn.preprocessing import StandardScaler
 
-    icao = 'RJOT'
+    icao = 'RJCC'
     model_dir = '%s/ARC-common/fit_output/JMA_MSM/vis' % DATA_DIR
-    model_name = 'GLOBAL_METAR-%s.vis.dev' % icao
+    model_name = 'GLOBAL_METAR-%s.vis' % icao
     data_dir = '%s/skynet' % DATA_DIR
     data_name = 'test_%s' % icao
 

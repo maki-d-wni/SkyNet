@@ -79,7 +79,7 @@ def main():
 
     target = skyds.get_init_target()
 
-    icao = 'RJFK'
+    icao = 'RJCC'
     # 'RJSS',
     # 'RJTT',
     # 'ROAH',
