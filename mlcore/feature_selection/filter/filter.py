@@ -13,7 +13,7 @@ def pearson_correlation(X, y, depth=None):
     else:
         fets = fets[idx][:depth]
 
-    return np.array(fets)
+    return list(fets)
 
 
 def relief(X, y, depth=None):

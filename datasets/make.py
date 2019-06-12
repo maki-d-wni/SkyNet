@@ -203,3 +203,26 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+airport_list_20 = [
+    'RJAA',
+    'RJBB',
+    'RJCC',
+    'RJCH',
+    'RJFF',
+    'RJFK',
+    'RJGG',
+    'RJNK',
+    'RJOA',
+    'RJOC',
+    'RJOO',
+    'RJOT',
+    'RJSC',
+    'RJSI',
+    'RJSK',
+    'RJSM',
+    'RJSN',
+    'RJSS',
+    'RJTT',
+    'ROAH'
+]
