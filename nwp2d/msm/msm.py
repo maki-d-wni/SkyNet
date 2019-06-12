@@ -1,11 +1,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-<<<<<<< HEAD
 import pygrib
-from mpl_toolkits.basemap import Basemap
 from skynet import AIRPORT_LATLON, MSM_BBOX, MSM_SHAPE
-=======
 
 try:
     from mpl_toolkits.basemap import Basemap
@@ -21,7 +18,6 @@ except KeyError:
     from mpl_toolkits.basemap import Basemap
 
 from skynet import MSM_BBOX, MSM_SHAPE
->>>>>>> e03c32b5d515b313ca4bdaba82ea76f9261a9b98
 
 
 class DrawerBase(object):
