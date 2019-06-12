@@ -1,6 +1,5 @@
 def normal(data):
     import pandas as pd
-    import skynet.nwp2d as npd
     import skynet.datasets as skyds
     from sklearn.preprocessing import StandardScaler
 

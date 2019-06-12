@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
 import pandas as pd
+import skynet.nwp2d as npd
 
 
 def split_blocks(X, y, n_folds=3):
@@ -82,7 +83,8 @@ def split_time_series(X, date, date_fmt='%Y-%m-%d %H:%M', level="month", period=
         return spd
 
 
-def balanced(X, y):
+def balanced(X, y, seed=0):
+    np.random.seed(seed=seed)
     if type(y) == pd.DataFrame:
         y = y.values[:, 0]
 
@@ -98,9 +100,9 @@ def balanced(X, y):
 
     shuffled = np.random.choice(new_indices, len(new_indices), replace=False)
 
-    if type(X) == pd.DataFrame:
+    if type(X) == pd.DataFrame or type(X) == npd.NWPFrame:
         X = X.iloc[shuffled].reset_index(drop=True)
-        y = pd.DataFrame(y)
+        y = pd.Series(y)
         y = y.iloc[shuffled].reset_index(drop=True)
     elif type(X) == np.ndarray:
         X = X[shuffled]

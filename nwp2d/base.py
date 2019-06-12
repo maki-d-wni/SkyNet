@@ -158,10 +158,12 @@ class NWPFrame(DataFrame):
         else:
             return new_data
 
-    def sine(self, column, period, drop=False, inplace=False):
+    def sine(self, column, drop=False, inplace=False):
         from pandas.core.reshape.concat import concat
-        val = self[column].astype(int).values
-        s = DataFrame(np.cos(2 * np.pi * val / period), columns=['sine_%s' % column])
+        val = self[column].astype(float).values
+        period = val.max() - val.min()
+        w = np.sin(2 * np.pi * val / period)
+        s = DataFrame(w, columns=['sine_%s' % column])
 
         if drop:
             self.drop(column, axis=1, inplace=True)

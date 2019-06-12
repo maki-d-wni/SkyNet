@@ -18,6 +18,9 @@ AF_INFO = __data['AF']
 MSM_BBOX = (120., 22.4, 150., 47.6,)
 MSM_SHAPE = {'surface': (505, 481), 'upper': (253, 241)}
 
+GSM_BBOX = (0, -90, 360, 90)
+GSM_SHAPE = {'surface': (361, 720), 'upper': (181, 360)}
+
 __airport_data = json.load(open('%s/all_airport_data.json' % os.path.dirname(os.path.abspath(__file__)), 'r'))
 ICAOS = list(__airport_data['airport'].keys())
 AIRPORT_LATLON = {

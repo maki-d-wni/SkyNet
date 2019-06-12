@@ -1,9 +1,9 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 import pygrib
+
+import numpy as np
+import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
-from skynet import AIRPORT_LATLON, MSM_BBOX, MSM_SHAPE
+from skynet import GSM_BBOX, GSM_SHAPE
 
 
 class DrawerBase(object):
@@ -109,20 +109,19 @@ class DrawerBase(object):
         self._cmap = cmap
 
 
-class MSMDrawer(DrawerBase):
-    def __init__(self, msm_files=None, params=None, levels=None, forecast_time=None):
+class GSMDrawer(DrawerBase):
+    def __init__(self, gsm_files, params=None, levels=None, forecast_time=None):
         super().__init__()
-        self.lat1 = MSM_BBOX[1]
-        self.lat2 = MSM_BBOX[3]
-        self.lon1 = MSM_BBOX[0]
-        self.lon2 = MSM_BBOX[2]
+        self.lat1 = GSM_BBOX[1]
+        self.lat2 = GSM_BBOX[3]
+        self.lon1 = GSM_BBOX[0]
+        self.lon2 = GSM_BBOX[2]
 
         self.params = params
         self.levels = levels
         self.forecast_time = forecast_time
 
-        if msm_files is not None:
-            self.__grbs_list = read_grib(msm_files, params=params, levels=levels, forecast_time=forecast_time)
+        self.__grbs_list = read_grib(gsm_files, params=params, levels=levels, forecast_time=forecast_time)
 
     def run(self):
         us = {}
@@ -225,7 +224,7 @@ class MSMDrawer(DrawerBase):
         fig.add_subplot()
         fig.subplots_adjust(top=self.top, bottom=self.bottom, right=self.right, left=self.left)
 
-        print(temperature.shape)
+        print(self.lat1, self.lat2, self.lon1, self.lon2)
 
         m = Basemap(
             projection="cyl",
@@ -333,15 +332,15 @@ class MSMDrawer(DrawerBase):
         return fig
 
     def __latlons(self, level):
-        if level < 100:
-            x0 = MSM_SHAPE['surface'][0]
-            x1 = MSM_SHAPE['surface'][1]
+        if level < 10 or level >= 100:
+            x0 = GSM_SHAPE['surface'][0]
+            x1 = GSM_SHAPE['surface'][1]
             lats = np.linspace(self.lat2, self.lat1, x0)
             lons = np.linspace(self.lon1, self.lon2, x1)
             lons, lats = np.meshgrid(lons, lats)
         else:
-            x0 = MSM_SHAPE['upper'][0]
-            x1 = MSM_SHAPE['upper'][1]
+            x0 = GSM_SHAPE['upper'][0]
+            x1 = GSM_SHAPE['upper'][1]
             lats = np.linspace(self.lat2, self.lat1, x0)
             lons = np.linspace(self.lon1, self.lon2, x1)
             lons, lats = np.meshgrid(lons, lats)
@@ -349,6 +348,8 @@ class MSMDrawer(DrawerBase):
 
 
 def read_grib(files, params=None, levels=None, forecast_time=None):
+    import pygrib
+
     kwargs = {}
     if params is not None:
         kwargs['parameterName'] = params
@@ -383,23 +384,11 @@ def read_grib(files, params=None, levels=None, forecast_time=None):
     return grbs_list
 
 
-def read_gribs_area(files, lon1, lat1, lon2, lat2):
-    dict_grbs = {}
-    for file in files:
-        dict_grb = read_grib_area(file, lon1, lat1, lon2, lat2)
-
-        for date_key in dict_grb.keys():
-            if not (date_key in dict_grbs.keys()):
-                dict_grbs = {date_key: {}}
-
-            dict_grbs[date_key].update(dict_grb[date_key])
-
-    return dict_grbs
-
-
-def read_grib_airport(file, icao, layer):
+def read_airport(file, icao, layer):
+    import pygrib
+    import pandas as pd
     latlon = get_airport_latlon([icao])
-    idx_latlon = airport_latlon_to_indices(latlon, layer)
+    idx_latlon = latlon_to_indices(latlon, layer)
 
     grbs = pygrib.open(file)
 
@@ -416,35 +405,6 @@ def read_grib_airport(file, icao, layer):
         df.loc[ft, pn] = grb.values[lat, lon]
 
     return df
-
-
-def read_grib_area(file, lon1, lat1, lon2, lat2):
-    grbs = pygrib.open(file)
-    grbs = grbs.select()
-
-    level = grbs[0].level
-    if (level >= 0) and (level < 100):
-        layer = 'surface'
-    else:
-        layer = 'upper'
-
-    idx_lat1, idx_lon1 = latlon_to_index(lat1, lon1, layer)
-    idx_lat2, idx_lon2 = latlon_to_index(lat2, lon2, layer)
-
-    dict_grbs = {}
-    for grb in grbs:
-        ft = grb.forecastTime
-        pn = grb.parameterName
-        date = grb.validDate.strftime('%Y-%m-%d %H:%M')
-        if layer == 'upper':
-            pn += '_' + str(grb.level)
-
-        if not (date in dict_grbs.keys()):
-            dict_grbs = {date: {}}
-
-        dict_grbs[date][pn] = grb.values[idx_lat2:idx_lat1, idx_lon1:idx_lon2]
-
-    return dict_grbs
 
 
 def get_jp_icaos():
@@ -467,6 +427,7 @@ def get_jp_icaos():
 
 
 def get_airport_latlon(icaos):
+    from skynet import AIRPORT_LATLON
     latlon = {
         icao: {
             'lat': AIRPORT_LATLON[icao]["lat"],
@@ -477,26 +438,7 @@ def get_airport_latlon(icaos):
     return latlon
 
 
-def latlon_to_index(lat, lon, layer):
-    lat1_grb = MSM_BBOX[1]
-    lat2_grb = MSM_BBOX[3]
-    lon1_grb = MSM_BBOX[0]
-    lon2_grb = MSM_BBOX[2]
-
-    if layer == 'surface':
-        n_lats = MSM_SHAPE['surface'][0]
-        n_lons = MSM_SHAPE['surface'][1]
-    else:
-        n_lats = MSM_SHAPE['upper'][0]
-        n_lons = MSM_SHAPE['upper'][1]
-
-    idx_lat = round((n_lats - 1) * (1 - (lat - lat1_grb) / (lat2_grb - lat1_grb)))
-    idx_lon = round((n_lons - 1) * (lon - lon1_grb) / (lon2_grb - lon1_grb))
-
-    return idx_lat, idx_lon
-
-
-def airport_latlon_to_indices(latlon, layer):
+def latlon_to_indices(latlon, layer):
     from skynet import AIRPORT_LATLON, MSM_BBOX, MSM_SHAPE
 
     icaos = list(latlon.keys())
@@ -525,70 +467,20 @@ def airport_latlon_to_indices(latlon, layer):
 
 
 def main():
-    import glob
-    import pygrib
+    data_dir = '/Users/makino/PycharmProjects/SkyCC/data/GSM/'
+    data_name = '20190529_000000.000'
 
-    msm_dir = '/Users/makino/PycharmProjects/SkyCC/data/MSM/raw/surface/' \
-              'bt00/vt0015/20150101_000000.000'
-    msm_files = glob.glob('%s/*_*.*.*' % msm_dir)
-    msm_files.sort()
+    gsm_files = ['%s/%s' % (data_dir, data_name)]
 
-    dict_grbs = read_gribs_area(msm_files, lon1=137.75, lat1=36.7, lon2=139.75, lat2=38.7)
-    print(dict_grbs)
+    drawer = GSMDrawer(
+        gsm_files,
+        params=['Temperature']
+    )
 
-    '''
-    grbs = pygrib.open(msm_files[0])
-    for grb in grbs:
-        latlon = grb.latlons()
-        lat1, lat2, lon1, lon2 = latlon[0].min(), latlon[0].max(), latlon[1].min(), latlon[1].max()
-        # print(lat1, lat2, lon1, lon2)
-        lat1_ngt, lat2_ngt, lon1_ngt, lon2_ngt = \
-            latlon[0][109, 142], latlon[0][89, 158], latlon[1][109, 142], latlon[1][89, 158]
-        print(lat1_ngt, lat2_ngt, lon1_ngt, lon2_ngt)
-
-    read_grib_airport(msm_files[0], 'RJAA', layer='surface')
-
-    jp_icaos = [
-        'RJOT',
-        'RJAA',
-        'RJSC',
-        'RJSI',
-        'RJSK',
-        'RJSM',
-        'RJSN',
-        'RJSS',
-        'RJTT',
-        'ROAH',
-        'RJOC',
-        'RJOO',
-        'RJBB',
-        'RJCC',
-        'RJCH',
-        'RJFF',
-        'RJFK',
-        'RJGG',
-        'RJNK',
-        'RJOA',
-    ]
-
-    latlon = get_airport_latlon(jp_icaos)
-    print(latlon)
-    idx_latlon = airport_latlon_to_indices(latlon, layer='surface')
-    print(idx_latlon)
-
-    from skynet import MY_DIR
-    print(MY_DIR)
-
-    drawer = MSMDrawer(msm_files,
-                       params=[
-                           'Temperature'
-                       ],
-                       forecast_time=[0]
-                       )
     drawer.run()
+
     plt.show()
-    '''
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
