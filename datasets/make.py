@@ -32,10 +32,11 @@ def check_grib(grbs, ft, param, level=None):
             return False
 
 
-def msm_airport_ft0(icaos, save_dir):
+def msm_airport_ft0(icaos):
     import re
     import glob
     import gc
+    import pickle
     import pygrib
     import skynet.nwp2d as npd
     from skynet import MSM_INFO, MSM_DATA_DIR
@@ -47,8 +48,8 @@ def msm_airport_ft0(icaos, save_dir):
     tagid_list = [tagid for tagid in MSM_INFO.keys() if re.match(r'4002200', tagid)]
     tagid_list.sort()
 
+    df_airports = {icao: npd.NWPFrame() for icao in icaos}
     for icao in icaos:
-        msm_point = npd.NWPFrame()
         for tagid in tagid_list:
             meta = MSM_INFO[tagid]
 
@@ -80,7 +81,7 @@ def msm_airport_ft0(icaos, save_dir):
 
                         lat = sf_latlon_idx[icao][0]
                         lon = sf_latlon_idx[icao][1]
-                        msm_point.loc[date, param] = grb.values[lat, lon]
+                        df_airports[icao].loc[date, param] = grb.values[lat, lon]
 
                         del grb
                         gc.collect()
@@ -94,14 +95,15 @@ def msm_airport_ft0(icaos, save_dir):
 
                         lat = up_latlon_idx[icao][0]
                         lon = up_latlon_idx[icao][1]
-                        msm_point.loc[date, param] = grb.values[lat, lon]
+                        df_airports[icao].loc[date, param] = grb.values[lat, lon]
 
                         del grb
                         gc.collect()
 
                     grbs.close()
 
-        msm_point.to_csv('%s/%s.csv' % (save_dir, icao))
+        df_airports[icao].to_csv('/Users/makino/PycharmProjects/SkyCC/data/msm_airport/%s.csv' % icao)
+    pickle.dump(df_airports, open('/Users/makino/PycharmProjects/SkyCC/data/all_airport.pkl', 'wb'))
 
 
 def msm_airport_xy(icao, metar_dir, msm_dir, save_dir):
@@ -158,15 +160,13 @@ def msm_airport_xy(icao, metar_dir, msm_dir, save_dir):
 
 
 def main():
-    import os
-    import skynet.nwp2d as npd
     from skynet import DATA_DIR
 
-    jp_icaos = npd.msm.get_jp_icaos()
-    jp_icaos2 = [
+    # jp_icaos = msm.get_jp_icaos()
+    jp_icaos = [
         # 'RJOT',
-        'RJAA',
-        'RJBB',
+        # 'RJAA',
+        # 'RJBB',
         'RJCC',
         'RJCH',
         'RJFF',
@@ -186,19 +186,14 @@ def main():
         'RJOO',
     ]
 
-    jp_icaos = [icao for icao in jp_icaos if not (icao in jp_icaos2)]
-    jp_icaos.sort()
-
-    save_dir = '%s/MSM/airport' % DATA_DIR
-    os.makedirs(save_dir, exist_ok=True)
-    msm_airport_ft0(jp_icaos, save_dir)
+    # msm_airport_ft0(jp_icaos)
 
     icao = 'RJBB'
     metar_dir = '%s/metar/airport' % DATA_DIR
     msm_dir = '%s/MSM/airport' % DATA_DIR
     save_dir = '%s/MSM/airport.process' % DATA_DIR
 
-    # msm_airport_xy(icao, metar_dir, msm_dir, save_dir)
+    msm_airport_xy(icao, metar_dir, msm_dir, save_dir)
 
 
 if __name__ == '__main__':

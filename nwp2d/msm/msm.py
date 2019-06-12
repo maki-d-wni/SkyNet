@@ -2,22 +2,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import pygrib
+from mpl_toolkits.basemap import Basemap
 from skynet import AIRPORT_LATLON, MSM_BBOX, MSM_SHAPE
-
-try:
-    from mpl_toolkits.basemap import Basemap
-except KeyError:
-    import os
-    import conda
-
-    conda_file_dir = conda.__file__
-    conda_dir = conda_file_dir.split('lib')[0]
-    proj_lib = os.path.join(os.path.join(conda_dir, 'share'), 'proj')
-    os.environ['PROJ_LIB'] = proj_lib
-
-    from mpl_toolkits.basemap import Basemap
-
-from skynet import MSM_BBOX, MSM_SHAPE
 
 
 class DrawerBase(object):

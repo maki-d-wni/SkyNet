@@ -3,6 +3,8 @@ import shutil
 import numpy as np
 import pandas as pd
 
+from RU import *
+
 
 def read(icaos, date, time):
     files = glob.glob(DATA_PATH + "/411023800/%s_%s*" % (date, time))

@@ -8,8 +8,8 @@ def move_nwp_file(input_path, output_path, pattern):
     for d in list_dir:
         if os.path.isdir(input_path + "/" + d):
             if re.match(pattern, d):
-                print('mv -f %s/%s/* %s/' % (input_path, d, output_path))
-                os.system('mv %s/%s/* %s/%s/' % (input_path, d, output_path, d))
+                print('mv -f %s/%s %s' % (input_path, d, output_path))
+                os.system('mv %s/%s %s/%s' % (input_path, d, output_path, d))
             else:
                 move_nwp_file(input_path + "/" + d, output_path, pattern)
         else:
@@ -77,10 +77,10 @@ def __check_iterable(obj):
 
 
 def main():
-    from skynet import DATA_DIR
     from skynet import MSM_INFO
 
-    tagid_dirs = os.listdir('%s/legacy' % DATA_DIR)
+    data_path = '/Users/makino/PycharmProjects/SkyCC/data'
+    tagid_dirs = os.listdir('%s/legacy' % data_path)
     tagid_dirs.sort()
 
     for tagid in MSM_INFO:
@@ -90,20 +90,21 @@ def main():
             lvt = MSM_INFO[tagid]['last validity time']
             layer = MSM_INFO[tagid]['layer']
 
-            input_path = '%s/legacy/%s' % (DATA_DIR, tagid)
-            output_path = '%s/MSM/%s/bt%s/vt%s%s' % (DATA_DIR, layer, bt, fvt, lvt)
+            input_path = '%s/legacy/%s' % (data_path, tagid)
+            output_path = '%s/grib2/MSM/%s/bt%s/vt%s%s' % (data_path, layer, bt, fvt, lvt)
 
+            print(output_path)
             date_dir_list = os.listdir(output_path)
             date_dir_list.sort()
             for date_dir in date_dir_list:
                 if os.path.exists('%s/%s/%s' % (output_path, date_dir, date_dir)):
                     # os.system('mv -f %s/%s/%s/* %s/%s/' % (output_path, date_dir, date_dir, output_path, date_dir))
-                    # os.system('rm -r %s/%s/%s' % (output_path, date_dir, date_dir))
+                    os.system('rm -r %s/%s/%s' % (output_path, date_dir, date_dir))
                     # print('mv -f %s/%s/%s/* %s/%s/' % (output_path, date_dir, date_dir, output_path, date_dir))
                     print('rm -r %s/%s/%s' % (output_path, date_dir, date_dir))
                     # print(date_dir)
-            os.makedirs(output_path, exist_ok=True)
-            move_nwp_file(input_path, output_path, pattern=r'\d{8}_\d{6}')
+            # os.makedirs(output_path, exist_ok=True)
+            # move_nwp_file(input_path, output_path, pattern=r'\d{8}_\d{6}')
 
 
 if __name__ == '__main__':

@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 
+from RU import *
+
 
 def read(icaos, date, time):
-    import os
-
     files = os.listdir(DATA_PATH + "/411023118")
     fidx = np.array([int(t[9:15]) - int(time) for t in files]).argmin()
 
