@@ -1,11 +1,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-<<<<<<< HEAD
 import pygrib
-from mpl_toolkits.basemap import Basemap
 from skynet import AIRPORT_LATLON, MSM_BBOX, MSM_SHAPE
-=======
 
 try:
     from mpl_toolkits.basemap import Basemap
@@ -19,9 +16,6 @@ except KeyError:
     os.environ['PROJ_LIB'] = proj_lib
 
     from mpl_toolkits.basemap import Basemap
-
-from skynet import MSM_BBOX, MSM_SHAPE
->>>>>>> e03c32b5d515b313ca4bdaba82ea76f9261a9b98
 
 
 class DrawerBase(object):
@@ -401,20 +395,6 @@ def read_grib(files, params=None, levels=None, forecast_time=None):
     return grbs_list
 
 
-def read_gribs_area(files, lon1, lat1, lon2, lat2):
-    dict_grbs = {}
-    for file in files:
-        dict_grb = read_grib_area(file, lon1, lat1, lon2, lat2)
-
-        for date_key in dict_grb.keys():
-            if not (date_key in dict_grbs.keys()):
-                dict_grbs = {date_key: {}}
-
-            dict_grbs[date_key].update(dict_grb[date_key])
-
-    return dict_grbs
-
-
 def read_grib_airport(file, icao, layer):
     latlon = get_airport_latlon([icao])
     idx_latlon = airport_latlon_to_indices(latlon, layer)
@@ -438,9 +418,10 @@ def read_grib_airport(file, icao, layer):
 
 def read_grib_area(file, lon1, lat1, lon2, lat2):
     grbs = pygrib.open(file)
-    grbs = grbs.select()
+    selected_grbs = grbs.select()
+    grbs.close()
 
-    level = grbs[0].level
+    level = selected_grbs[0].level
     if (level >= 0) and (level < 100):
         layer = 'surface'
     else:
@@ -450,17 +431,32 @@ def read_grib_area(file, lon1, lat1, lon2, lat2):
     idx_lat2, idx_lon2 = latlon_to_index(lat2, lon2, layer)
 
     dict_grbs = {}
-    for grb in grbs:
-        ft = grb.forecastTime
+    for grb in selected_grbs:
         pn = grb.parameterName
-        date = grb.validDate.strftime('%Y-%m-%d %H:%M')
-        if layer == 'upper':
-            pn += '_' + str(grb.level)
+        level = grb.level
+        if pn in ['u-component of wind', 'v-component of wind', 'Temperature']:
+            if str(level) in ['850', '700', '500']:
+                date = grb.validDate.strftime('%Y-%m-%d %H:%M')
+                if layer == 'upper':
+                    pn += '_' + str(level)
 
-        if not (date in dict_grbs.keys()):
-            dict_grbs = {date: {}}
+                if not (date in dict_grbs.keys()):
+                    dict_grbs[date] = {}
 
-        dict_grbs[date][pn] = grb.values[idx_lat2:idx_lat1, idx_lon1:idx_lon2]
+                dict_grbs[date][pn] = grb.values[idx_lat2:idx_lat1, idx_lon1:idx_lon2]
+    return dict_grbs
+
+
+def read_gribs_area(files, lon1, lat1, lon2, lat2):
+    dict_grbs = {}
+    for file in files:
+        dict_grb = read_grib_area(file, lon1, lat1, lon2, lat2)
+
+        for date_key in dict_grb.keys():
+            if not (date_key in dict_grbs.keys()):
+                dict_grbs[date_key] = dict_grb[date_key]
+
+            dict_grbs[date_key].update(dict_grb[date_key])
 
     return dict_grbs
 
@@ -544,15 +540,30 @@ def airport_latlon_to_indices(latlon, layer):
 
 def main():
     import glob
-    import pygrib
+    import pickle
 
-    msm_dir = '/Users/makino/PycharmProjects/SkyCC/data/MSM/raw/surface/' \
-              'bt00/vt0015/20150101_000000.000'
-    msm_files = glob.glob('%s/*_*.*.*' % msm_dir)
-    msm_files.sort()
+    bts = [6, 18]
+    for bt in bts:
+        data_dir = '/home/maki-d/common/floria/part1/MSM'
+        msm_upper_dirs = glob.glob('%s/upper/bt%02d/vt0015/*_*.*' % (data_dir, bt))
+        msm_upper_dirs.sort()
 
-    dict_grbs = read_gribs_area(msm_files, lon1=137.75, lat1=36.7, lon2=139.75, lat2=38.7)
-    print(dict_grbs)
+        msm_upper = {}
+        for msm_upper_dir in msm_upper_dirs:
+            print(msm_upper_dir)
+            msm_upper_files = glob.glob('%s/*_*.*' % msm_upper_dir)
+            dict_grbs = read_gribs_area(msm_upper_files, lon1=137.75, lat1=36.7, lon2=139.75, lat2=38.7)
+            msm_upper.update(dict_grbs)
+
+        keys = sorted(msm_upper.keys())
+        msm_upper = {key: msm_upper[key] for key in keys}
+
+        save_dir = '/home/maki-d/PycharmProjects/SkyCC/data/MSM/area'
+        save_name = 'NGT_upper_bt%02d.pkl' % bt
+        pickle.dump(msm_upper, open('%s/%s' % (save_dir, save_name), 'wb'))
+        print(msm_upper.keys())
+        # print(msm_upper['2019-06-11 00:00'].keys())
+        # print(msm_upper['2019-06-11 00:00']['Temperature_850'].shape)
 
     '''
     grbs = pygrib.open(msm_files[0])
